@@ -33,33 +33,16 @@
 
 static void update_progress_counters(winx_file_info *f,udefrag_job_parameters *jp);
 
-/**
- * @internal
- * @brief An auxiliary structure for
- * the get_volume_information routine.
- */
-struct fs {
-    char *name; /* the file system name, in uppercase */
-    file_system_type type; /* the type of the file system */
-    /* 
-    * The FAT-formatted disks are somewhat special as the
-    * first clusters of directories are immovable there.
-    */
-    int is_fat;
-};
-
-/**
- * @internal
- */
-struct fs fs_types[] = {
-    {"NTFS",  FS_NTFS,  0},
-    {"FAT12", FS_FAT12, 1},
-    {"FAT",   FS_FAT16, 1}, /* no need to distinguish better */
-    {"FAT16", FS_FAT16, 1},
-    {"FAT32", FS_FAT32, 1},
-    {"EXFAT", FS_EXFAT, 1},
-    {"UDF",   FS_UDF,   0},
-    {NULL,    0,        0}
+/* This is how we distinguish FAT/NTFS */
+fs_type_struct fs_types[8] = {
+    { "NTFS",  FS_NTFS,  0,1 },
+    { "FAT12", FS_FAT12, 1,0 },
+    { "FAT",   FS_FAT16, 1,0 },
+    { "FAT16", FS_FAT16, 1,0 },
+    { "FAT32", FS_FAT32, 1,0 },
+    { "EXFAT", FS_EXFAT, 1,0 },
+    { "UDF",   FS_UDF,   0,0 },
+    { NULL,    FS_UNKNOWN,0,0 }
 };
 
 /**
@@ -159,6 +142,8 @@ static int get_volume_information(udefrag_job_parameters *jp)
     jp->pi.total_space = jp->v_info.total_bytes;
     jp->pi.free_space = jp->v_info.free_bytes;
     itrace("total clusters: %I64u",jp->v_info.total_clusters);
+    jp->pi.used_clusters = jp->v_info.total_clusters - (jp->v_info.free_bytes / jp->v_info.bytes_per_cluster);
+    itrace("used clusters : %I64u",jp->pi.used_clusters);
     itrace("cluster size: %I64u",jp->v_info.bytes_per_cluster);
     /* validate geometry */
     if(!jp->v_info.total_clusters || !jp->v_info.bytes_per_cluster){
@@ -175,6 +160,7 @@ static int get_volume_information(udefrag_job_parameters *jp)
         if(!strcmp(fs_name,fs_types[i].name)){
             jp->fs_type = fs_types[i].type;
             jp->is_fat = fs_types[i].is_fat;
+            jp->is_ntfs = fs_types[i].is_ntfs;
             break;
         }
     }
@@ -208,7 +194,7 @@ static int process_free_region(winx_volume_region *rgn,void *user_defined_data)
     
     if(jp->udo.dbgprint_level >= DBG_PARANOID)
         itrace("Free block start: %I64u len: %I64u",rgn->lcn,rgn->length);
-    colorize_map_region(jp,rgn->lcn,rgn->length,FREE_SPACE,SYSTEM_SPACE);
+    colorize_map_region(jp,rgn->lcn,rgn->length,FREE_SPACE,DEFAULT_COLOR);  //genBTC,-was using wrong alias.
     jp->pi.processed_clusters += rgn->length;
     jp->free_regions_count ++;
     return 0; /* continue scan */
@@ -226,7 +212,7 @@ static int get_free_space_layout(udefrag_job_parameters *jp)
     jp->free_regions = winx_get_free_volume_regions(jp->volume_letter,
         WINX_GVR_ALLOW_PARTIAL_SCAN,process_free_region,(void *)jp);
     
-    winx_bytes_to_hr(jp->v_info.free_bytes,1,buffer,sizeof(buffer));
+    winx_bytes_to_hr(jp->v_info.free_bytes,2,buffer,sizeof(buffer));
     itrace("free space amount : %s",buffer);
     itrace("free regions count: %u",jp->free_regions_count);
     
@@ -267,8 +253,7 @@ static void get_mft_zones_layout(udefrag_job_parameters *jp)
     * Don't increment progress counters,
     * because mft zones are partially inside
     * of the already counted free space pool.
-    */
-    itrace("%-12s: %-20s: %-20s", "mft section", "start", "length");
+    */    
 
     /* $MFT */
     start = jp->v_info.ntfs_data.MftStartLcn.QuadPart;
@@ -276,9 +261,10 @@ static void get_mft_zones_layout(udefrag_job_parameters *jp)
         length = jp->v_info.ntfs_data.MftValidDataLength.QuadPart / jp->v_info.ntfs_data.BytesPerCluster;
     else
         length = 0;
-    itrace("%-12s: %-20I64u: %-20I64u", "mft", start, length);
+    itrace("%-12s: %-20s: %-20s", "mft section", "start", "length");
     jp->pi.mft_size = length * jp->v_info.bytes_per_cluster;
     itrace("mft size = %I64u bytes", jp->pi.mft_size);
+    itrace("%-12s: %-20I64u: %-20I64u", "mft", start, length);
 
     /* MFT Zone */
     start = jp->v_info.ntfs_data.MftZoneStart.QuadPart;
@@ -427,12 +413,13 @@ static int filter(winx_file_info *f,void *user_defined_data)
         goto skip_file;
     
     /* show debugging information about interesting cases */
+    /* comment it out after testing to speed things up */
+    /*
     if(is_sparse(f))
         dtrace("sparse file found: %ws",f->path);
     if(is_reparse_point(f))
         dtrace("reparse point found: %ws",f->path);
-    /* comment it out after testing to speed things up */
-    /*if(winx_wcsistr(f->path,L"$BITMAP"))
+    if(winx_wcsistr(f->path,L"$BITMAP"))
         dtrace("bitmap found: %ws",f->path);
     if(winx_wcsistr(f->path,L"$ATTRIBUTE_LIST"))
         dtrace("attribute list found: %ws",f->path);
@@ -475,7 +462,7 @@ skip_file:
     f->user_defined_flags |= UD_FILE_EXCLUDED;
     
 accept_file:
-    /* count everything in the context menu handler to avoid ambiguity */
+    /* count everything in context menu handler to avoid ambiguity */
     if(jp->udo.job_flags & UD_JOB_CONTEXT_MENU_HANDLER){
         if(jp->udo.cut_filter.count){
             if(winx_patcmp(f->path + 0x4,&jp->udo.cut_filter))
@@ -575,7 +562,7 @@ static int find_files(udefrag_job_parameters *jp)
     winx_file_info *f;
     winx_blockmap *block;
     
-    /* check for the context menu handler */
+    /* check for context menu handler (single files/directories)*/
     if(jp->udo.job_flags & UD_JOB_CONTEXT_MENU_HANDLER){
         if(jp->udo.cut_filter.count > 0){
             if(wcslen(jp->udo.cut_filter.array[0]) >= wcslen(L"C:\\"))
@@ -583,7 +570,7 @@ static int find_files(udefrag_job_parameters *jp)
         }
     }
 
-    /* speed up the context menu handler */
+    /* speed up the context menu handler for (single files/directories) & non-NTFS */
     if(jp->fs_type != FS_NTFS && context_menu_handler){
         /* in case of c:\* or c:\ scan the entire disk */
         c = jp->udo.cut_filter.array[0][3];
@@ -615,7 +602,8 @@ static int find_files(udefrag_job_parameters *jp)
     
     /* calculate number of fragmented files; redraw the map */
     for(f = jp->filelist; f; f = f->next){
-        /* skip excluded files */
+        /* skip excluded files. if excluded, count as 1 fragment.
+            obviously if not fragmented, it counts as 1. */
         if(!is_fragmented(f) || is_excluded(f)){
             jp->pi.fragments ++;
         } else {
@@ -624,7 +612,7 @@ static int find_files(udefrag_job_parameters *jp)
         }
 
         /* redraw cluster map */
-        colorize_file(jp,f,SYSTEM_SPACE);
+        colorize_file(jp,f,DEFAULT_COLOR);  //genBTC,-was using wrong alias.
         
         /* add file blocks to a binary tree - after winx_scan_disk! */
         for(block = f->disp.blockmap; block; block = block->next){
@@ -687,6 +675,7 @@ static int is_well_known_locked_file(winx_file_info *f,udefrag_job_parameters *j
         L"$Bitmap",
         L"$Extend\\$ObjId",
         L"$Extend\\$UsnJrnl",
+        L"$Extend\\$UsnJrnl:$J",
         L"$LogFile",
         L"$MFT::$BITMAP",
         L"$Secure",
@@ -709,6 +698,9 @@ static int is_well_known_locked_file(winx_file_info *f,udefrag_job_parameters *j
         return 1;
     if(winx_wcsistr(f->name,L"hiberfil.sys"))
         return 1;
+    // Win10 has created a swapfile.sys
+    if(winx_wcsistr(f->name,L"swapfile.sys"))
+        return 1;
     return 0;
 }
 
@@ -724,7 +716,7 @@ static void redraw_well_known_locked_files(udefrag_job_parameters *jp)
     ULONGLONG time;
     ULONGLONG n = 0;
 
-    winx_dbg_print_header(0,0,I"search for well known locked files...");
+    winx_dbg_print_header(0,0,I"searching for well known locked files...");
     time = winx_xtime();
     
     for(f = jp->filelist; f; f = f->next){
@@ -732,10 +724,10 @@ static void redraw_well_known_locked_files(udefrag_job_parameters *jp)
             if(is_well_known_locked_file(f,jp)){
                 if(!is_file_locked(f,jp)){
                     /* possibility of this case should be reduced */
-                    itrace("false detection: %ws",f->path);
+                    dtrace("file wasn't locked: %ws",f->path);
                 } else {
-                    itrace("true detection:  %ws",f->path);
-                    n ++;
+                    itrace("locked file DETECTED:  %ws",f->path);
+                    ++n;
                 }
             }
         }
@@ -778,10 +770,20 @@ int expand_fragmented_files_list(winx_file_info *f,udefrag_job_parameters *jp)
     void **p;
     
     /* don't include filtered out files, for better performance */
-    if(!is_excluded(f)){
+    //genBTC asks:
+    // Wouldnt this already be filtered out, since this is only called from:
+    // Analyze.C, produce_list_of_fragmented_files()
+    //   and
+    // Move.C, move_file() near the very end
+    // and in both functions, they are called from inside this if block:
+    //         if(is_fragmented(f) && !is_excluded(f)){
+    // so they should already be verified by !is_exluded(f)
+    //I guess this was put in for future expansion?
+
+    //if(!is_excluded(f)){
         p = prb_probe(jp->fragmented_files,(void *)f);
         if(p && *p != f) etrace("a duplicate found for %ws",f->path);
-    }
+    //}
     return 0;
 }
 
@@ -803,19 +805,27 @@ static void produce_list_of_fragmented_files(udefrag_job_parameters *jp)
 {
     winx_file_info *f;
     ULONGLONG bad_fragments = 0;
-    
+    ULONGLONG bad_clusters = 0;
+
     itrace("started creation of fragmented files list");
     jp->fragmented_files = prb_create(fragmented_files_compare,(void *)jp,NULL);
     for(f = jp->filelist; f; f = f->next){
         if(is_fragmented(f) && !is_excluded(f)){
             expand_fragmented_files_list(f,jp);
-            /* more precise calculation seems to be too slow */
+            //Old way counts number of fragments and calculates percentage on
+            // how many TOTAL fragments exist. Seems very inaccurate...
             bad_fragments += f->disp.fragments;
+            bad_clusters += f->disp.clusters;   //use clusters instead.
         }
         if(f->next == jp->filelist) break;
     }
     jp->pi.bad_fragments = bad_fragments;
+    jp->pi.bad_clusters = bad_clusters;
+    jp->pi.fragmented_files_prb = jp->fragmented_files; //pointer for fileslist.cpp to access
+    jp->pi.isfragfileslist = 1;
     itrace("finished creation of fragmented files list");
+    itrace("fragments total: %u",jp->pi.fragments);
+    itrace("bad_clusters   : %u",jp->pi.bad_clusters);
 }
 
 /**
@@ -844,14 +854,12 @@ static int check_requested_action(udefrag_job_parameters *jp)
  */
 int check_fragmentation_level(udefrag_job_parameters *jp)
 {
-    double x, y;
     unsigned int ifr, it;
     double fragmentation;
     
-    x = (double)jp->pi.bad_fragments;
-    y = (double)jp->pi.fragments;
-    if(y == 0) fragmentation = 0.00;
-    else fragmentation = (x / y) * 100.00;
+    //fragmentation = calc_percentage(jp->pi.bad_fragments,jp->pi.fragments);
+    fragmentation = calc_percentage(jp->pi.bad_clusters,jp->pi.used_clusters);
+    
     ifr = (unsigned int)(fragmentation * 100.00);
     it = (unsigned int)(jp->udo.fragmentation_threshold * 100.00);
     if(fragmentation < jp->udo.fragmentation_threshold){

@@ -231,6 +231,12 @@ void ProcessVolume(char letter)
         winx_printf("optimize mft on %c: ...\n",letter);
         message = "MFT optimization";
         break;
+    case SINGLE_FILE_MOVE_FRONT_JOB:
+        winx_printf("SINGLE_FILE_MOVE_FRONT_JOB on %c: ...\n",letter);
+        break;
+    case SINGLE_FILE_MOVE_END_JOB:
+        winx_printf("SINGLE_FILE_MOVE_END_JOB on %c: ...\n",letter);
+        break;        
     }
     /* display the time limit whenever it's set */
     buffer = winx_getenv(L"UD_TIME_LIMIT");

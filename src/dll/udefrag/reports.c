@@ -37,8 +37,9 @@
  */
 #define RSB_SIZE (512 * 1024)
 
+
 /**
- * @internal
+ * \brief Calls winx_to_utf8 then Replaces the \\\ path chars with \\ 
  */
 static void convert_to_utf8_path(char *dst,int size,wchar_t *src)
 {
@@ -62,10 +63,11 @@ static void convert_to_utf8_path(char *dst,int size,wchar_t *src)
 static wchar_t *get_report_path(udefrag_job_parameters *jp)
 {
     wchar_t *instdir, *fpath;
+    wchar_t *isportable;//genBTC
     wchar_t *path = NULL;
 
-    instdir = winx_getenv(L"UD_INSTALL_DIR");
-    if(instdir == NULL){
+    isportable = winx_getenv(L"UD_IS_PORTABLE");//genBTC
+    if(isportable != NULL){
         /* portable version? */
         fpath = winx_get_module_filename();
         if(fpath == NULL){
@@ -86,6 +88,7 @@ static wchar_t *get_report_path(udefrag_job_parameters *jp)
             winx_free(fpath);
         }
     } else {
+        instdir = winx_getenv(L"UD_INSTALL_DIR");
         /* regular installation */
         path = winx_swprintf(L"\\??\\%ws\\reports",instdir);
         if(path == NULL){
@@ -108,7 +111,7 @@ static wchar_t *get_report_path(udefrag_job_parameters *jp)
  */
 static int save_lua_report(udefrag_job_parameters *jp)
 {
-    wchar_t *path = NULL;
+    wchar_t *path;
     WINX_FILE *f;
     wchar_t *cn;
     wchar_t compname[MAX_COMPUTERNAME_LENGTH + 1];
@@ -120,12 +123,10 @@ static int save_lua_report(udefrag_job_parameters *jp)
     char *status;
     int length;
     winx_time tm;
-    
-    /* should be enough for any path in UTF-8 encoding */
-    #define MAX_UTF8_PATH_LENGTH (256 * 1024)
+
     char *utf8_path;
     
-    utf8_path = winx_tmalloc(MAX_UTF8_PATH_LENGTH);
+    utf8_path = (char *)winx_tmalloc(MAX_UTF8_PATH_LENGTH);
     if(utf8_path == NULL){
         mtrace();
         return (-1);
@@ -180,7 +181,7 @@ static int save_lua_report(udefrag_job_parameters *jp)
     
     /* print body */
     prb_t_init(&t,jp->fragmented_files);
-    file = prb_t_first(&t,jp->fragmented_files);
+    file = (winx_file_info *)prb_t_first(&t,jp->fragmented_files);
     while(file){
         if(is_directory(file))
             comment = "[DIR]";
@@ -231,7 +232,7 @@ static int save_lua_report(udefrag_job_parameters *jp)
         (void)strcpy(buffer,"\"},\r\n");
         (void)winx_fwrite(buffer,1,strlen(buffer),f);
 
-        file = prb_t_next(&t);
+        file = (winx_file_info *)prb_t_next(&t);
     }
     
     /* print footer */
@@ -253,18 +254,17 @@ static int save_lua_report(udefrag_job_parameters *jp)
  */
 int save_fragmentation_report(udefrag_job_parameters *jp)
 {
-    int result = 0;
+    int result;
     ULONGLONG time;
 
     winx_dbg_print_header(0,0,I"*");
+    winx_dbg_print_header(0,0,I"report saving started");
     if(jp->job_type != ANALYSIS_JOB)
         dbg_print_file_counters(jp);
     
     if(jp->udo.disable_reports)
         return 0;
     
-    winx_dbg_print_header(0,0,I"*");
-    winx_dbg_print_header(0,0,I"report saving started");
     time = winx_xtime();
 
     result = save_lua_report(jp);

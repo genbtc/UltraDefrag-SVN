@@ -23,205 +23,33 @@
 #include "../zenwinx/ntndk.h"
 #include "../zenwinx/zenwinx.h"
 
+#include "ud_flags.h"
+#include "ud_enums.h"
+#include "ud_structs.h"
 #include "udefrag.h"
-
 #include "../../include/version.h"
 
-#define DEFAULT_COLOR SYSTEM_SPACE
+typedef void(*udefrag_query_progress_callback)(udefrag_query_parameters *qp, void *p);
+typedef int (*udefrag_termination_router)(void /*udefrag_job_parameters*/ *p);
 
-/************************************************************/
-/*             Constants affecting performance              */
-/************************************************************/
-
-/* fragment size threshold for partial defragmentation */
-#define PART_DEFRAG_MAGIC_CONSTANT  (20 * 1024 * 1024)
-
-/* default file size threshold for optimization */
-#define OPTIMIZER_MAGIC_CONSTANT    (20 * 1024 * 1024)
-
-/* magic constants for the cut_off_group_of_files routine */
-#define OPTIMIZER_MAGIC_CONSTANT_N  10
-#define OPTIMIZER_MAGIC_CONSTANT_M  1
-
-/************************************************************/
-/*                Prototypes, constants etc.                */
-/************************************************************/
-
-#define MAX_FILE_SIZE ((ULONGLONG) -1)
-#define MAX_RGN_SIZE  ((ULONGLONG) -1)
-#define DEFAULT_FRAGMENT_SIZE_THRESHOLD (MAX_FILE_SIZE / 2)
-
-/* flags for the user_defined_flags member of the filelist entries */
-#define UD_FILE_EXCLUDED         0x1
-#define UD_FILE_OVER_LIMIT       0x2
-
-/* file status flags */
-#define UD_FILE_LOCKED           0x4   /* file is locked by system */
-#define UD_FILE_MOVING_FAILED    0x10  /* file moving failed */
-#define UD_FILE_IMPROPER_STATE   0x20  /* file is in improper state (chkdsk run needed) or some bug encountered */
-
-/*
-* This flag is used to skip already processed
-* files in individual volume processing tasks.
+/**
+* \brief aka "jp->". Job Parameters = A whole littany of objects. Kitchen Sink. Passed back and forth All-The-Time. Holds State too.
 */
-#define UD_FILE_CURRENTLY_EXCLUDED      0x40
-
-/*
-* This flag is used to speed things up.
-* If we'll repeatedly check the file
-* we'll noticeably slow down all the
-* volume procesing routines.
-*/
-#define UD_FILE_NOT_LOCKED              0x80
-
-/*
-* This flag is used to avoid repeated
-* moves in volume optimization.
-*/
-#define UD_FILE_MOVED_TO_FRONT         0x100
-
-/*
-* This flag is used to mark files
-* fragmented by the MFT optimizer.
-*/
-#define UD_FILE_FRAGMENTED_BY_FILE_OPT 0x200
-
-/*
-* Some essential DOS/boot files need to
-* be at fixed locations on disk, so we're
-* skipping them to keep the computer bootable.
-*/
-#define UD_FILE_ESSENTIAL_BOOT_FILE    0x800
-
-/* This flag is used to speed things up. */
-#define UD_FILE_NOT_ESSENTIAL_FILE     0x1000
-
-/*
-* An auxiliary flag for the move_files_to_front routine.
-*/
-#define UD_FILE_REGION_NOT_FOUND       0x2000
-
-/* These flags are used to speed things up. */
-#define UD_FILE_MFT_FILE               0x4000
-#define UD_FILE_NOT_MFT_FILE           0x8000
-
-#define is_excluded(f)               ((f)->user_defined_flags & UD_FILE_EXCLUDED)
-#define is_over_limit(f)             ((f)->user_defined_flags & UD_FILE_OVER_LIMIT)
-#define is_locked(f)                 ((f)->user_defined_flags & UD_FILE_LOCKED)
-#define is_moving_failed(f)          ((f)->user_defined_flags & UD_FILE_MOVING_FAILED)
-#define is_in_improper_state(f)      ((f)->user_defined_flags & UD_FILE_IMPROPER_STATE)
-#define is_currently_excluded(f)     ((f)->user_defined_flags & UD_FILE_CURRENTLY_EXCLUDED)
-#define is_moved_to_front(f)         ((f)->user_defined_flags & UD_FILE_MOVED_TO_FRONT)
-#define is_fragmented_by_file_opt(f) ((f)->user_defined_flags & UD_FILE_FRAGMENTED_BY_FILE_OPT)
-#define is_essential_boot_file(f)    ((f)->user_defined_flags & UD_FILE_ESSENTIAL_BOOT_FILE)
-#define is_not_essential_file(f)     ((f)->user_defined_flags & UD_FILE_NOT_ESSENTIAL_FILE)
-#define is_mft_file(f)               ((f)->user_defined_flags & UD_FILE_MFT_FILE)
-#define is_not_mft_file(f)           ((f)->user_defined_flags & UD_FILE_NOT_MFT_FILE)
-
-#define is_block_excluded(b)         ((b)->length == 0)
-
-/*
-* NOTE: these flags are mutually exclusive.
-*/
-#define UD_SORT_BY_PATH               0x1
-#define UD_SORT_BY_SIZE               0x2
-#define UD_SORT_BY_CREATION_TIME      0x4
-#define UD_SORT_BY_MODIFICATION_TIME  0x8
-#define UD_SORT_BY_ACCESS_TIME        0x10
-#define UD_SORT_DESCENDING            0x20
-
-typedef struct _udefrag_options {
-    winx_patlist in_filter;     /* paths to be defragmented */
-    winx_patlist ex_filter;     /* paths to be skipped */
-    winx_patlist cut_filter;    /* an auxiliary filter used internally to cut off files
-                                   when individual files/directories are to be defragmented */
-    ULONGLONG fragment_size_threshold;  /* fragment size threshold */
-    ULONGLONG size_limit;       /* file size threshold */
-    ULONGLONG optimizer_size_limit; /* file size threshold for the disk optimization */
-    ULONGLONG fragments_limit;  /* file fragments threshold */
-    ULONGLONG time_limit;       /* processing time limit, in seconds */
-    int refresh_interval;       /* progress refresh interval, in milliseconds */
-    int disable_reports;        /* nonzero value disables generation of the file fragmentation reports */
-    int dbgprint_level;         /* controls amount of debugging output */
-    int dry_run;                /* set %UD_DRY_RUN% variable to avoid actual data moving in tests */
-    int job_flags;              /* flags triggering algorithm features */
-    int sorting_flags;          /* flags triggering file sorting features (UD_SORT_xxx flags) */
-    int algorithm_defined_fst;  /* nonzero value indicates that the fragment size threshold
-                                   is set by the algorithm and not by the user */
-    double fragmentation_threshold; /* fragmentation level threshold */
-} udefrag_options;
-
-struct _mft_zone {
-    ULONGLONG start;
-    ULONGLONG length;
-};
-
-typedef enum {
-    FS_UNKNOWN = 0, /* ext2 and others */
-    FS_FAT12,
-    FS_FAT16,
-    FS_FAT32,
-    FS_EXFAT,
-    FS_NTFS,
-    FS_UDF
-} file_system_type;
-
-/*
-* More info at http://www.thescripts.com/forum/thread617704.html
-* ('Dynamically-allocated Multi-dimensional Arrays - C').
-*/
-typedef struct _cmap {
-    ULONGLONG (*array)[SPACE_STATES];
-    ULONGLONG field_size;
-    int map_size;
-    int n_colors;
-    ULONGLONG clusters_per_cell;
-    ULONGLONG clusters_per_last_cell;
-    BOOLEAN opposite_order; /* clusters < cells */
-    ULONGLONG cells_per_cluster;
-    ULONGLONG unused_cells;
-} cmap;
-
-struct performance_counters {
-    ULONGLONG overall_time;               /* time spent for volume processing */
-    ULONGLONG analysis_time;              /* time spent for volume analysis */
-    ULONGLONG searching_time;             /* time spent for searching */
-    ULONGLONG moving_time;                /* time spent for file moves */
-    ULONGLONG temp_space_releasing_time;  /* time spent to release space temporarily allocated by system */
-};
-
-#define TINY_FILE_SIZE            0 * 1024  /* < 10 KB */
-#define SMALL_FILE_SIZE          10 * 1024  /* 10 - 100 KB */
-#define AVERAGE_FILE_SIZE       100 * 1024  /* 100 KB - 1 MB */
-#define BIG_FILE_SIZE          1024 * 1024  /* 1 - 16 MB */
-#define HUGE_FILE_SIZE    16 * 1024 * 1024  /* 16 - 128 MB */
-#define GIANT_FILE_SIZE  128 * 1024 * 1024  /* > 128 MB */
-
-struct file_counters {
-    unsigned long tiny_files;
-    unsigned long small_files;
-    unsigned long average_files;
-    unsigned long big_files;
-    unsigned long huge_files;
-    unsigned long giant_files;
-};
-
-typedef int  (*udefrag_termination_router)(void /*udefrag_job_parameters*/ *p);
-
 typedef struct _udefrag_job_parameters {
     unsigned char volume_letter;                /* volume letter */
     udefrag_job_type job_type;                  /* type of the requested job */
     udefrag_progress_callback cb;               /* progress update callback */
-    udefrag_terminator t;                       /* termination callback */
-    void *p;                                    /* pointer to data to be passed to both callbacks */
-    udefrag_termination_router termination_router;  /* address of procedure triggering job termination */
+    udefrag_terminator t;                       /* termination callback {wxgui.exe!QueryThread::Terminator(void *)} */
+    void *p;                                    /* pointer to user defined data to be passed to both callbacks */
+    udefrag_termination_router termination_router;  /* address of procedure triggering job termination {udefrag.dll!query_terminator(void *)}*/
     ULONGLONG start_time;                       /* time of the job launch */
     ULONGLONG progress_refresh_time;            /* time of the last progress refresh */
     udefrag_options udo;                        /* job options */
     udefrag_progress_info pi;                   /* progress counters */
     winx_volume_information v_info;             /* basic volume information */
-    file_system_type fs_type;                   /* type of the file system */
+    fs_type_enum fs_type;                   /* type of the file system */
     int is_fat;                                 /* nonzero value indicates that the file system is a kind of FAT */
+    int is_ntfs;                                /* quick indicate that it is NTFS: */
     winx_file_info *filelist;                   /* list of files */
     struct prb_table *fragmented_files;         /* list of fragmented files; does not contain filtered out files */
     winx_volume_region *free_regions;           /* list of free space regions */
@@ -237,6 +65,8 @@ typedef struct _udefrag_job_parameters {
     int progress_trigger;                       /* a trigger used for debugging purposes */
     struct _mft_zone mft_zone;                  /* initial mft zone disposition */
     int win_version;                            /* Windows version */
+    udefrag_query_parameters qp;               /* Embed a pointer to Query_parameters inside this for query.c */
+    udefrag_query_progress_callback qpcb;       /* query progress update callback */
 } udefrag_job_parameters;
 
 int get_options(udefrag_job_parameters *jp);
@@ -255,7 +85,7 @@ void colorize_map_region(udefrag_job_parameters *jp,
 void colorize_file(udefrag_job_parameters *jp, winx_file_info *f, int old_color);
 int get_file_color(udefrag_job_parameters *jp, winx_file_info *f);
 void release_temp_space_regions(udefrag_job_parameters *jp);
-void redraw_all_temporary_system_space_as_free(udefrag_job_parameters *jp);
+//void redraw_all_temporary_system_space_as_free(udefrag_job_parameters *jp);
 
 int analyze(udefrag_job_parameters *jp);
 int defragment(udefrag_job_parameters *jp);
@@ -266,39 +96,33 @@ int check_fragmentation_level(udefrag_job_parameters *jp);
 
 void dbg_print_header(udefrag_job_parameters *jp);
 ULONGLONG start_timing(char *operation_name,udefrag_job_parameters *jp);
-void stop_timing(char *operation_name,ULONGLONG start_time,udefrag_job_parameters *jp);
+ULONGLONG stop_timing(char *operation_name,ULONGLONG start_time,udefrag_job_parameters *jp);
 void dbg_print_performance_counters(udefrag_job_parameters *jp);
 void dbg_print_footer(udefrag_job_parameters *jp);
 
 int check_region(udefrag_job_parameters *jp,ULONGLONG lcn,ULONGLONG length);
 
-NTSTATUS udefrag_fopen(winx_file_info *f,HANDLE *phFile);
+//NTSTATUS udefrag_fopen(winx_file_info *f,HANDLE *phFile);
 int is_file_locked(winx_file_info *f,udefrag_job_parameters *jp);
-int is_mft(winx_file_info *f,udefrag_job_parameters *jp);
+int is_mft(winx_file_info *f, fs_type_enum fs_type);    //genBTC
 
 int exclude_by_fragment_size(winx_file_info *f,udefrag_job_parameters *jp);
 int exclude_by_fragments(winx_file_info *f,udefrag_job_parameters *jp);
 int exclude_by_size(winx_file_info *f,udefrag_job_parameters *jp);
 int expand_fragmented_files_list(winx_file_info *f,udefrag_job_parameters *jp);
 void truncate_fragmented_files_list(winx_file_info *f,udefrag_job_parameters *jp);
-winx_blockmap *build_fragments_list(winx_file_info *f,ULONGLONG *n_fragments);
+winx_blockmap* build_fragments_list(winx_file_info *f,ULONGLONG *n_fragments);
 void release_fragments_list(winx_blockmap **fragments);
 void clear_currently_excluded_flag(udefrag_job_parameters *jp);
-
-int move_file(winx_file_info *f,
-              ULONGLONG vcn,
-              ULONGLONG length,
-              ULONGLONG target,
-              udefrag_job_parameters *jp
-              );
-int can_move(winx_file_info *f,udefrag_job_parameters *jp);
-int can_move_entirely(winx_file_info *f,udefrag_job_parameters *jp);
 
 winx_volume_region *find_first_free_region(udefrag_job_parameters *jp,
     ULONGLONG min_lcn,ULONGLONG min_length,ULONGLONG *max_length);
 winx_volume_region *find_last_free_region(udefrag_job_parameters *jp,
     ULONGLONG min_lcn,ULONGLONG min_length,ULONGLONG *max_length);
 winx_volume_region *find_largest_free_region(udefrag_job_parameters *jp);
+/*winx_volume_region *find_matching_free_region(udefrag_job_parameters *jp,
+    ULONGLONG start_lcn, ULONGLONG min_length, int preferred_position);
+*/
 
 int create_file_blocks_tree(udefrag_job_parameters *jp);
 int add_block_to_file_blocks_tree(udefrag_job_parameters *jp, winx_file_info *file, winx_blockmap *block);
@@ -307,9 +131,34 @@ void destroy_file_blocks_tree(udefrag_job_parameters *jp);
 winx_blockmap *find_first_block(udefrag_job_parameters *jp,
     ULONGLONG *min_lcn, int flags, winx_file_info **first_file);
 
-/* flags for the find_first_block routine */
-enum {
-    SKIP_PARTIALLY_MOVABLE_FILES = 0x1
-};
+int movefile_to_start_or_end(udefrag_job_parameters *jp,int start_or_end);
+
+void deliver_progress_info(udefrag_job_parameters *jp,int completion_status);
+
+/*Begin Query.C definitions */
+//void otherCleanupFunction(udefrag_job_parameters* jp);
+int query_get_VCNlist(udefrag_job_parameters *jp);
+int query_get_freeRegions(udefrag_job_parameters *jp);
+
+// Helps extern/export defs, dont remove:
+#if defined(__cplusplus)
+extern "C" {
+#endif
+int move_file(winx_file_info *f,
+    ULONGLONG vcn,
+    ULONGLONG length,
+    ULONGLONG target,
+    udefrag_job_parameters *jp
+);
+int can_move(winx_file_info *f, fs_type_enum fstype);   //genBTC
+int can_move_entirely(winx_file_info *f, fs_type_enum fstype);
+
+int udefrag_starts_query(char volume_letter, udefrag_query_type job_type, int flags, int cluster_map_size,
+    udefrag_query_progress_callback qpcb, udefrag_terminator t, udefrag_query_parameters qp, void *p);
+
+// Helps extern/export defs, dont remove:
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* _UDEFRAG_INTERNALS_H_ */

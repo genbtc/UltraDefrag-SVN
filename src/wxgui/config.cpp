@@ -36,6 +36,7 @@
 
 #include "prec.h"
 #include "main.h"
+#pragma comment(lib, "lua5.1a.lib")
 
 extern "C" {
 #define lua_c
@@ -47,6 +48,17 @@ extern "C" {
 // =======================================================================
 //                      Application configuration
 // =======================================================================
+wxString wxGetCurrentWorkingDirectory()
+{
+    wxFileName path(wxGetCwd());
+    path.Normalize();
+    return path.GetFullPath();
+}
+//reference these variables instead of magic-strings all over the source-files.
+wxString OPTIONSDIR = wxGetCurrentWorkingDirectory() << "\\conf\\";
+wxString OPTIONSFILE = OPTIONSDIR << "options.lua";
+//options file should be in its own directory because of the change-tracker
+//change-tracker should not care about anything else being modified.
 
 /**
  * @brief Reads application configuration.
@@ -90,7 +102,7 @@ void MainFrame::ReadAppConfiguration()
     );
 
     int defaultColumnWidths[LIST_COLUMNS] = {
-        110, 110, 110, 110, 110, 65
+        250, 280, 108, 98, 97, 67
     };
     for(int i = 0; i < LIST_COLUMNS; i++){
         cfg->Read(wxString::Format(wxT("/DrivesList/width%d"),i),
@@ -195,9 +207,9 @@ void MainFrame::ReadUserPreferences(wxCommandEvent& WXUNUSED(event))
     wxUnsetEnv(wxT("UD_SORTING_ORDER"));
     wxUnsetEnv(wxT("UD_TIME_LIMIT"));
 
-    /* interprete guiopts.lua file */
+    /* interpret options.lua file */
     lua_State *L; int status; wxString error = wxT("");
-    wxFileName path(wxT(".\\conf\\options.lua"));
+    wxFileName path(OPTIONSFILE);
     path.Normalize();
     if(!path.FileExists()){
         etrace("%ls file not found",
@@ -216,9 +228,9 @@ void MainFrame::ReadUserPreferences(wxCommandEvent& WXUNUSED(event))
     luaL_openlibs(L);
     lua_gc(L,LUA_GCRESTART,0);
 
-    status = luaL_dofile(L,ansi(path.GetShortPath()));
+    status = luaL_dofile(L,CVT_ANSI(path.GetShortPath()));
     if(status != 0){
-        error += wxT("cannot interprete ") + path.GetFullPath();
+        error += wxT("cannot interpret ") + path.GetFullPath();
         etrace("%ls",ws(error));
         if(!lua_isnil(L,-1)){
             const char *msg = lua_tostring(L,-1);
@@ -290,14 +302,14 @@ void *ConfigThread::Entry()
 
     itrace("configuration tracking started");
 
-    HANDLE h = FindFirstChangeNotification(wxT(".\\conf"),
+    HANDLE h = FindFirstChangeNotification(OPTIONSDIR.wc_str(),
         FALSE,FILE_NOTIFY_CHANGE_LAST_WRITE);
     if(h == INVALID_HANDLE_VALUE){
         letrace("FindFirstChangeNotification failed");
         goto done;
     }
 
-    while(!g_mainFrame->CheckForTermination(1)){
+    while(!g_mainFrame->CheckForTermination(10)){
         DWORD status = WaitForSingleObject(h,100);
         if(status == WAIT_OBJECT_0){
             if(!(counter % 2)){
@@ -337,7 +349,7 @@ void *ConfigThread::Entry()
 
 done:
     itrace("configuration tracking stopped");
-    return NULL;
+    return nullptr;
 }
 
 // =======================================================================
@@ -347,15 +359,34 @@ done:
 void MainFrame::OnGuiOptions(wxCommandEvent& WXUNUSED(event))
 {
     if(m_title->Find(wxT("Portable")) != wxNOT_FOUND)
-        Utils::ShellExec(wxT("notepad"),wxT("open"),wxT(".\\conf\\options.lua"));
+        Utils::ShellExec(wxT("notepad"),wxT("open"),OPTIONSFILE);
     else
-        Utils::ShellExec(wxT(".\\conf\\options.lua"),wxT("edit"));
+        Utils::ShellExec(OPTIONSFILE,wxT("edit"));
 }
 
 void MainFrame::OnBootScript(wxCommandEvent& WXUNUSED(event))
 {
     wxFileName script(wxT("%SystemRoot%\\system32\\ud-boot-time.cmd"));
     script.Normalize(); Utils::ShellExec(script.GetFullPath(),wxT("edit"));
+}
+
+void MainFrame::ChooseFontDialog(wxCommandEvent& event)
+{
+    wxFontDialog* dialog = new wxFontDialog(this);
+    if (dialog->ShowModal() == wxID_OK) {
+        wxFontData fontDataOUT = dialog->GetFontData();  //Get "font data" from dialog.
+        wxFont font = fontDataOUT.GetChosenFont();
+        //Update the GUI:
+        m_vList->SetFont(font);
+        m_vList->Refresh();
+        //ProcessCommandEvent(ID_AdjustListColumns);
+        m_filesList->SetFont(font);
+        m_filesList->Refresh();
+        //ProcessCommandEvent(ID_AdjustFilesListColumns);
+        dtrace("Chose new Font = %ws,%d", font.GetFaceName().wc_str(), font.GetPointSize());
+    }
+    dialog->Destroy();
+    delete dialog;
 }
 
 /** @} */

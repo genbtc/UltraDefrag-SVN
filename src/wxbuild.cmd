@@ -1,4 +1,4 @@
-@echo off
+@echo on
 ::
 :: Build script for wxWidgets library.
 :: Copyright (c) 2007-2017 Dmitri Arkhangelski (dmitriar@gmail.com).
@@ -191,7 +191,8 @@ exit /B 1
     :: http://support.microsoft.com/en-us/kb/2280741
     if %1 equ amd64 set WX_SDK_CPPFLAGS=%WX_SDK_CPPFLAGS% /Od
     
-    set WX_GCC_CPPFLAGS=-g0
+    ::-g0 is disable debugging, and no deprecated removes warnings that spam up the place inherent to WX 3.10
+    set WX_GCC_CPPFLAGS=-g0 -Wno-deprecated
 
     if %1 equ amd64 set WX_GCC_CPPFLAGS=%WX_GCC_CPPFLAGS% -m64
     

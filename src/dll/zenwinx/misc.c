@@ -178,7 +178,7 @@ wchar_t *winx_get_windows_boot_options(void)
     NTSTATUS status;
     HANDLE hKey;
     KEY_VALUE_PARTIAL_INFORMATION *data;
-    wchar_t *data_buffer = NULL;
+    wchar_t *data_buffer;
     DWORD data_size = 0;
     DWORD data_size2 = 0;
     DWORD data_length;
@@ -260,6 +260,11 @@ wchar_t *winx_get_windows_boot_options(void)
  * zero indicates normal boot and negative value indicates
  * indeterminism caused by impossibility of the appropriate check.
  */
+//TODO: This can be done by defining: extern PULONG InitSafeBootMode;
+//      Then you can do: (*InitSafeBootMode > 0) {  // The operating system is in Safe Mode. }
+//      This is provided by windows and we should have it.
+//https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/determining-whether-the-operating-system-is-running-in-safe-mode
+extern PULONG InitSafeBootMode;
 int winx_windows_in_safe_mode(void)
 {
     wchar_t *boot_options;

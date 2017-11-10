@@ -78,7 +78,7 @@ int get_options(udefrag_job_parameters *jp)
         jp->udo.fragment_size_threshold = winx_hr_to_bytes(buf);
         winx_free(buffer);
     }
-    /* if theshold isn't set, assign maximum value to it */
+    /* if threshold isn't set, assign maximum value to it */
     if(jp->udo.fragment_size_threshold == 0)
         jp->udo.fragment_size_threshold = DEFAULT_FRAGMENT_SIZE_THRESHOLD;
 
@@ -188,7 +188,7 @@ int get_options(udefrag_job_parameters *jp)
         if(dp != NULL){
             for(z = 0; dp[z + 1] == '0'; z++) {}
             for(r = (double)_wtoi(dp + 1); r > 1; r /= 10){}
-            r *= pow(10, -z);
+            r *= pow(10., -z);
             jp->udo.fragmentation_threshold += r;
         }
         winx_free(buffer);
@@ -197,17 +197,17 @@ int get_options(udefrag_job_parameters *jp)
     /* print all options */
     winx_dbg_print_header(0,0,I"ultradefrag job options");
     if(jp->udo.in_filter.count){
-        itrace("in_filter patterns:");
+        itrace("%d in_filter patterns:",jp->udo.in_filter.count);
         for(i = 0; i < jp->udo.in_filter.count; i++)
             itrace("  + %ws",jp->udo.in_filter.array[i]);
     }
     if(jp->udo.ex_filter.count){
-        itrace("ex_filter patterns:");
+        itrace("%d ex_filter patterns:",jp->udo.ex_filter.count);
         for(i = 0; i < jp->udo.ex_filter.count; i++)
             itrace("  - %ws",jp->udo.ex_filter.array[i]);
     }
     if(jp->udo.cut_filter.count){
-        itrace("cut_filter patterns:");
+        itrace("%d cut_filter patterns:",jp->udo.cut_filter.count);
         for(i = 0; i < jp->udo.cut_filter.count; i++)
             itrace("  + %ws",jp->udo.cut_filter.array[i]);
     }

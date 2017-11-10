@@ -79,7 +79,7 @@ static void send_crash_report()
         return;
     }
 
-    itrace("exception code: 0x%x",sd->exception_code);
+    itrace("exception code: 0x%x",sd->ud_exception_code);
     itrace("exception address: %p",sd->exception_address);
 
     // return immediately if usage tracking is disabled
@@ -101,14 +101,14 @@ static void send_crash_report()
     random = (rand() << 16) + rand();
     today = (__int64)time(NULL);
 
-    switch(sd->exception_code){
+    switch(sd->ud_exception_code){
     case EXCEPTION_FLT_DIVIDE_BY_ZERO:
     case EXCEPTION_INT_DIVIDE_BY_ZERO:
         // division by zero errors will likely occur in the main
         // executable, so it's good to record the exception address here
         _snwprintf(tracking_path,sizeof(tracking_path) / sizeof(wchar_t),
             L"/%hs/%ls/0x%x @ %p",wxUD_ABOUT_VERSION,sd->tracking_id,
-            sd->exception_code,sd->exception_address
+            sd->ud_exception_code,sd->exception_address
         );
         break;
     default:
@@ -118,7 +118,7 @@ static void send_crash_report()
         // hard so let's record just the exception code here
         _snwprintf(tracking_path,sizeof(tracking_path) / sizeof(wchar_t),
             L"/%hs/%ls/0x%x",wxUD_ABOUT_VERSION,sd->tracking_id,
-            sd->exception_code
+            sd->ud_exception_code
         );
         break;
     }

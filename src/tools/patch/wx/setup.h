@@ -914,7 +914,7 @@
 // Default is 1.
 //
 // Recommended setting: 1
-#define wxUSE_NOTEBOOK 0
+#define wxUSE_NOTEBOOK 1
 
 // wxListbook control is similar to wxNotebook but uses wxListCtrl instead of
 // the tabs
@@ -922,7 +922,7 @@
 // Default is 1.
 //
 // Recommended setting: 1
-#define wxUSE_LISTBOOK 0
+#define wxUSE_LISTBOOK 1
 
 // wxChoicebook control is similar to wxNotebook but uses wxChoice instead of
 // the tabs

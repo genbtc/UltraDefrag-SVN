@@ -60,20 +60,22 @@ int allocate_map(int map_size,udefrag_job_parameters *jp)
     int array_size;
     ULONGLONG used_cells;
     
-    /* reset all internal data */
-    jp->pi.cluster_map = NULL;
-    jp->pi.cluster_map_size = 0;
-    memset(&jp->cluster_map,0,sizeof(cmap));
-    
     itrace("map size = %u",map_size);
     if(map_size == 0)
         return 0;
-    
+
+    /* reset all internal data */
+    free_map(jp);
+
     /* get volume information */
-    if(winx_get_volume_information(jp->volume_letter,&jp->v_info) < 0)
-        return (-1);
-    if(jp->v_info.total_clusters == 0)
-        return (-1);
+    if(winx_get_volume_information(jp->volume_letter,&jp->v_info) < 0){
+        etrace("Couldn't get volume information for Drive: %c",jp->volume_letter);
+        return -1;
+    }
+    if(jp->v_info.total_clusters == 0){
+        etrace("Abnormal Error. Volume info said total_clusters == 0");
+        return -1;
+    }
 
     /* allocate memory */
     jp->pi.cluster_map = winx_tmalloc(map_size);
@@ -96,8 +98,8 @@ int allocate_map(int map_size,udefrag_job_parameters *jp)
     jp->cluster_map.map_size = map_size;
     jp->cluster_map.n_colors = SPACE_STATES;
     jp->cluster_map.field_size = jp->v_info.total_clusters;
-    
     jp->cluster_map.clusters_per_cell = jp->cluster_map.field_size / jp->cluster_map.map_size;
+    itrace("total_clusters,clusters_per_cell,clusters_per_last_cell,unused_cells.");
     if(jp->cluster_map.clusters_per_cell){
         jp->cluster_map.opposite_order = 0;
         if(jp->cluster_map.clusters_per_cell * jp->cluster_map.map_size != jp->cluster_map.field_size)
@@ -223,7 +225,7 @@ void colorize_map_region(udefrag_job_parameters *jp,
  * @brief Defines whether a file is $Mft or not.
  * @return Nonzero value indicates that the file is $Mft.
  */
-int is_mft(winx_file_info *f,udefrag_job_parameters *jp)
+int is_mft(winx_file_info *f, fs_type_enum fs_type)
 {
     int length;
     wchar_t mft_name[] = L"$Mft";
@@ -231,7 +233,7 @@ int is_mft(winx_file_info *f,udefrag_job_parameters *jp)
     if(f == NULL)
         return 0;
     
-    if(jp->fs_type != FS_NTFS)
+    if(fs_type != FS_NTFS)
         return 0;
     
     if(is_not_mft_file(f)) return 0;
@@ -256,7 +258,7 @@ int is_mft(winx_file_info *f,udefrag_job_parameters *jp)
 int get_file_color(udefrag_job_parameters *jp, winx_file_info *f)
 {
     /* show the $MFT file in dark magenta color */
-    if(is_mft(f,jp))
+    if(is_mft(f,jp->fs_type))
         return MFT_SPACE;
     
     if(is_locked(f))
@@ -266,23 +268,16 @@ int get_file_color(udefrag_job_parameters *jp, winx_file_info *f)
     if(is_fragmented(f) && !is_excluded(f))
         return is_over_limit(f) ? FRAGM_OVER_LIMIT_SPACE : FRAGM_SPACE;
 
-    if(is_directory(f)){
-        if(is_over_limit(f))
-            return DIR_OVER_LIMIT_SPACE;
-        else
-            return DIR_SPACE;
-    } else if(is_compressed(f)){
-        if(is_over_limit(f))
-            return COMPRESSED_OVER_LIMIT_SPACE;
-        else
-            return COMPRESSED_SPACE;
-    } else {
-        if(is_over_limit(f))
-            return UNFRAGM_OVER_LIMIT_SPACE;
-        else
-            return UNFRAGM_SPACE;
-    }
-    return UNFRAGM_SPACE; /* this point will never be reached */
+    if(is_directory(f))
+        return is_over_limit(f) ? DIR_OVER_LIMIT_SPACE : DIR_SPACE;
+    
+    if(is_compressed(f))
+        return is_over_limit(f) ? COMPRESSED_OVER_LIMIT_SPACE : COMPRESSED_SPACE;
+    
+    if (is_over_limit(f))
+        return UNFRAGM_OVER_LIMIT_SPACE;
+    //default case:
+    return UNFRAGM_SPACE;
 }
 
 /**

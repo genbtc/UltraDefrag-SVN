@@ -13,3 +13,4 @@
 *.gch
 *.pch
 Makefile.*
+.vs/

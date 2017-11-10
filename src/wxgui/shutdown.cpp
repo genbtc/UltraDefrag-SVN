@@ -36,7 +36,8 @@
 
 #include "prec.h"
 #include "main.h"
-#include <powrprof.h>
+#include <powrprof.h>	//required for SetSuspendState line 238,246
+#pragma comment(lib, "powrprof")
 
 #ifndef SHTDN_REASON_MAJOR_OTHER
 #define SHTDN_REASON_MAJOR_OTHER   0x00000000
@@ -199,7 +200,7 @@ int MainFrame::ShowShutdownDialog(int action)
 
 void MainFrame::Shutdown(wxCommandEvent& WXUNUSED(event))
 {
-    int action = 0;
+    int action=-1;//action was uninitialized
 
     if(m_menuBar->IsChecked(ID_WhenDoneNone)){
         // nothing to do

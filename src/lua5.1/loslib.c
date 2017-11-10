@@ -155,7 +155,7 @@ static int os_setenv (lua_State *L) {
 }
 
 static int os_shellexec (lua_State *L) {
-  int error;
+  unsigned long error;
   char *error_description;
   const char *path;
   const char *action;
@@ -190,8 +190,8 @@ static int os_shellexec (lua_State *L) {
   }
   path = luaL_checkstring(L, 1);
   action = luaL_checkstring(L, 2);
-  error = (int)(LONG_PTR)func_ShellExecuteA(NULL,
-    action,path,NULL,NULL,SW_SHOW);
+  error = HandleToUlong(func_ShellExecuteA(NULL,
+    action,path,NULL,NULL,SW_SHOW));
   lua_pushinteger(L, error);
   switch(error){
   case 0:

@@ -149,6 +149,8 @@ int winx_get_drive_type(char letter)
         return DRIVE_REMOTE;
     case FILE_DEVICE_UNKNOWN:
         return DRIVE_UNKNOWN;
+    default:
+        break;
     }
 
     /* detect removable disks */
@@ -243,7 +245,12 @@ static int get_filesystem_name(HANDLE hRoot,winx_volume_information *v)
     int length;
 
     fs_attr_info_size = MAX_PATH * sizeof(WCHAR) + sizeof(FILE_FS_ATTRIBUTE_INFORMATION);
-    pfa = winx_malloc(fs_attr_info_size);
+    //genBTC (changed to tmalloc and put in an error check and debug output on alloc failure)
+    pfa = winx_tmalloc(fs_attr_info_size);
+    if (pfa == NULL) {
+        etrace("cannot allocate %u bytes of memory", fs_attr_info_size);
+        return (-1);
+    }
     
     RtlZeroMemory(pfa,fs_attr_info_size);
     status = NtQueryVolumeInformationFile(hRoot,&IoStatusBlock,pfa,

@@ -35,8 +35,7 @@
 #define NDEBUG
 #endif
 #include <assert.h>
-/*#include <stdio.h>
-#include <stdlib.h>*/
+
 #include "prb.h"
 #include "zenwinx.h"
 #define malloc winx_malloc

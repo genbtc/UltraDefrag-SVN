@@ -22,20 +22,18 @@
 
 #ifndef _UDEFRAG_GUI_MAIN_H_
 #define _UDEFRAG_GUI_MAIN_H_
+#pragma comment(lib, "kernel32")
 
 // =======================================================================
 //                               Headers
 // =======================================================================
-
-#include "../include/dbg.h"
-#include "../include/version.h"
-#include "../dll/zenwinx/zenwinx.h"
-#include "../dll/udefrag/udefrag.h"
+#include "prec.h"
 
 // =======================================================================
 //                              Constants
 // =======================================================================
 
+#define MAX_UTF8_PATH_LENGTH (256 * 1024)
 #define LIST_COLUMNS 6 // number of columns in the list of volumes
 
 #define USAGE_TRACKING_ACCOUNT_ID wxT("UA-15890458-1")
@@ -68,6 +66,8 @@ enum {
     ID_Defrag,
     ID_QuickOpt,
     ID_FullOpt,
+    ID_MoveToFront,
+    ID_MoveToEnd,
     ID_MftOpt,
 
     ID_Pause,
@@ -100,6 +100,7 @@ enum {
     ID_BootEnable,
     ID_BootScript,
 
+    ID_ChooseFont,
     ID_SortByPath,
     ID_SortBySize,
     ID_SortByCreationDate,
@@ -129,6 +130,7 @@ enum {
     // event identifiers
     ID_AdjustListColumns,
     ID_AdjustListHeight,
+    ID_AdjustFilesListColumns,      //genBTC fileslist.cpp
     ID_AdjustSystemTrayIcon,
     ID_AdjustTaskbarIconOverlay,
     ID_BootChange,
@@ -136,7 +138,9 @@ enum {
     ID_DefaultAction,
     ID_DiskProcessingFailure,
     ID_JobCompletion,
+    ID_QueryCompletion,             //genBTC query.cpp callback
     ID_PopulateList,
+    ID_PopulateFilesList,           //genBTC fileslist.cpp
     ID_ReadUserPreferences,
     ID_RedrawMap,
     ID_RefreshDrivesInfo,
@@ -153,23 +157,38 @@ enum {
     ID_ShowHideMenu,
     ID_PauseMenu,
     ID_ExitMenu,
+    ID_SelectProperDrive,
+    ID_QueryClusters,               //genBTC query.cpp action
+    ID_QueryFreeGaps,
+    ID_QueryOperation2,
+    ID_QueryOperation3,
+    ID_QueryOperation4,
+    
+    ID_ANALYZE,                     //genBTC query.cpp buttons
+    ID_WXCOMBOBOX1,
+    ID_WXFILEPICKERCTRL1,
+    ID_WXTEXTCTRL1,
+    ID_WXSTATICTEXT1,
+    ID_PerformQueryBUTTON,
+    ID_LCNButton1,
+    ID_LCNButton2,
 
     // language selection menu item, must always be last in the list
     ID_LocaleChange
 };
-
-#define MAIN_WINDOW_DEFAULT_WIDTH  640
-#define MAIN_WINDOW_DEFAULT_HEIGHT 480
-#define MAIN_WINDOW_MIN_WIDTH      500
-#define MAIN_WINDOW_MIN_HEIGHT     375
-#define DEFAULT_LIST_HEIGHT        130
-#define MIN_PANEL_HEIGHT            40
+//set defaults:
+#define MAIN_WINDOW_DEFAULT_WIDTH  900
+#define MAIN_WINDOW_DEFAULT_HEIGHT 600
+#define MAIN_WINDOW_MIN_WIDTH      640
+#define MAIN_WINDOW_MIN_HEIGHT     480
+#define DEFAULT_LIST_HEIGHT        145
+#define MIN_PANEL_HEIGHT            42
 
 // dialog layout constants
 #define SMALL_SPACING  DPI(5)
 #define LARGE_SPACING  DPI(11)
-
-#define DEFAULT_DRY_RUN          0
+//default gui.ini
+#define DEFAULT_DRY_RUN          1      //genbtc wants this. TODO: decide.
 #define DEFAULT_FREE_COLOR_R   255
 #define DEFAULT_FREE_COLOR_G   255
 #define DEFAULT_FREE_COLOR_B   255
@@ -178,7 +197,7 @@ enum {
 #define DEFAULT_GRID_COLOR_B     0
 #define DEFAULT_GRID_LINE_WIDTH  1
 #define DEFAULT_MAP_BLOCK_SIZE   4
-#define DEFAULT_MINIMIZE_TO_SYSTEM_TRAY          0
+#define DEFAULT_MINIMIZE_TO_SYSTEM_TRAY          1
 #define DEFAULT_SECONDS_FOR_SHUTDOWN_REJECTION  60
 #define DEFAULT_SHOW_MENU_ICONS                  1
 #define DEFAULT_SHOW_PROGRESS_IN_TASKBAR         1
@@ -208,7 +227,7 @@ enum {
 * NOTE: Use it to pass strings to functions only as returned
 * objects may be temporary!
 */
-#define ansi(s) ((const char *)s.mb_str())
+#define CVT_ANSI(s) ((const char *)s.mb_str())
 #define ws(s) ((const wchar_t *)s.wc_str())
 
 /* converts pixels from 96 DPI to the current one */
@@ -241,22 +260,24 @@ public:
     StatThread() : wxThread(wxTHREAD_JOINABLE) { Create(); Run(); }
     ~StatThread() { Wait(); }
 
-    virtual void *Entry();
+    void *Entry() override;
 };
 
 class Log: public wxLog {
 public:
     Log()  { delete SetActiveTarget(this); };
-    ~Log() { SetActiveTarget(NULL); };
+    ~Log() { SetActiveTarget(nullptr); };
 
-    virtual void DoLogTextAtLevel(wxLogLevel level, const wxString& msg);
+    void DoLogTextAtLevel(wxLogLevel level, const wxString& msg) override;
 };
 
 class App: public wxApp {
 public:
-    virtual bool OnInit();
-    virtual int  OnExit();
-    virtual void OnInitCmdLine(wxCmdLineParser& parser) {
+    bool OnInit() override;
+    int  OnExit() override;
+
+    void OnInitCmdLine(wxCmdLineParser& parser) override
+    {
         /* wxWidgets raises an "assert failure" message without them */
         parser.AddSwitch(wxT("s"),wxT("setup"),wxT("setup"));
         parser.AddSwitch(wxT("v"),wxT("verbose"),wxT("verbose"));
@@ -282,7 +303,7 @@ public:
     BtdThread() : wxThread(wxTHREAD_JOINABLE) { Create(); Run(); }
     ~BtdThread() { Wait(); }
 
-    virtual void *Entry();
+    void *Entry() override;
 };
 
 class ConfigThread: public wxThread {
@@ -290,7 +311,7 @@ public:
     ConfigThread() : wxThread(wxTHREAD_JOINABLE) { Create(); Run(); }
     ~ConfigThread() { Wait(); }
 
-    virtual void *Entry();
+    void *Entry() override;
 };
 
 class JobThread: public wxThread {
@@ -300,12 +321,14 @@ public:
     }
     ~JobThread() { Wait(); }
 
-    virtual void *Entry();
+    void *Entry() override;
 
     bool m_launch;
     wxArrayString *m_volumes;
     udefrag_job_type m_jobType;
     int m_mapSize;
+    int m_flags;
+    bool singlefile;
 
 private:
     void ProcessVolume(int index);
@@ -322,12 +345,12 @@ public:
     }
     ~ListThread() { Wait(); }
 
-    virtual void *Entry();
+    void *Entry() override;
 
     bool m_rescan;
 };
 
-class RefreshDrivesInfoThread: public wxThread {
+class RefreshDrivesInfoThread : public wxThread {
 public:
     RefreshDrivesInfoThread() : wxThread(wxTHREAD_JOINABLE) { Create(); Run(); }
     ~RefreshDrivesInfoThread() { Wait(); }
@@ -335,9 +358,36 @@ public:
     virtual void *Entry();
 };
 
-class RecoveryConsole: public wxProcess {
+class RecoveryConsole : public wxProcess {
 public:
     virtual void OnTerminate(int pid, int status);
+};
+
+//genBTC query.cpp Query Thread.
+class QueryThread: public wxThread {
+public:
+    QueryThread() : wxThread(wxTHREAD_JOINABLE) {
+        m_startquery = false; Create(); Run();
+    }
+    ~QueryThread() { Wait(); }
+
+    int stopgap_finish_operation3();
+    void *Entry() override;
+    
+    void DisplayQueryResults(udefrag_query_parameters* qp);
+    
+    bool m_startquery;
+    wxString m_querypath;
+    int m_flags;
+    bool singlefile;
+    int m_mapSize;
+    char m_letter;
+    udefrag_query_type m_qType;
+    udefrag_query_parameters* m_qp;
+
+private:
+    static void PostProgressCallback(udefrag_query_parameters* qp, void* p);
+    static int Terminator(void *p);    
 };
 
 class UpgradeThread: public wxThread {
@@ -347,7 +397,7 @@ public:
     }
     ~UpgradeThread() { Wait(); }
 
-    virtual void *Entry();
+    void *Entry() override;
 
     bool m_check;
     int m_level;
@@ -358,7 +408,7 @@ private:
 
 class SystemTrayIcon: public wxTaskBarIcon {
 public:
-    virtual wxMenu *CreatePopupMenu();
+    wxMenu *CreatePopupMenu() override;
 
     void OnMenuShowHide(wxCommandEvent& event);
     void OnMenuPause(wxCommandEvent& event);
@@ -376,6 +426,9 @@ public:
         wxDefaultPosition,wxDefaultSize,style) {}
     ~DrivesList() {}
 
+    void DeSelectAll();
+    int GetIndexFromLetter(char sel = 0);
+    char GetLetter(int i = -1);
     void OnKeyDown(wxKeyEvent& event);
     void OnKeyUp(wxKeyEvent& event);
     void OnMouse(wxMouseEvent& event);
@@ -384,25 +437,149 @@ public:
     DECLARE_EVENT_TABLE()
 };
 
+class ListSortInfo{
+public:
+        ListSortInfo(): ListCtrl(NULL)
+	{
+		SortAscending = false;
+		Column = 1; //pre-sorted by Fragments.
+	}
+
+	bool SortAscending;
+    int Column;
+    class FilesList *ListCtrl;
+};
+struct FilesListItem{
+    wxString col0,col1,col2,col3,col4,col5;
+    ULONGLONG col2bytes;
+    long currindex;
+    wxString ReturnColumn(long column) const
+    {
+        switch (column) {
+        case 0:
+            return col0;
+        case 1:
+            return col1;
+        case 2:
+            return col2;
+        case 3:
+            return col3;
+        case 4:
+            return col4;
+        case 5:
+            return col5;
+        default:
+            wxFAIL_MSG("Invalid column index in FilesList::OnGetItemText");
+            return wxEmptyString;
+        }        
+    }
+};
+
+typedef std::vector<FilesListItem> FilesListItems;
+
+//genBTC FilesList.cpp
+class FilesList: public wxListCtrl {
+public:
+    FilesList(wxWindow* parent, long style)
+		: wxListCtrl(parent, wxID_ANY,
+		             wxDefaultPosition, wxDefaultSize, style), currentlyselected(0),
+		  currently_being_workedon_filenames(NULL), n_lastItem(0)
+	{
+	}
+
+    ~FilesList() {}
+    
+    FilesListItems allitems;    //data container for virtual list
+    void SortVirtualItems(int Column);
+    // -----------------------------------------------------------------------
+    //BEGIN PROTOTYPES FROM wxListView
+    // ---------------------
+    // focus/selection stuff
+    // ---------------------
+    // [de]select an item
+    void Select(long n, bool on = true){
+        SetItemState(n, on ? wxLIST_STATE_SELECTED : 0, wxLIST_STATE_SELECTED);}
+    // focus and show the given item
+    void Focus(long index)
+    {
+        SetItemState(index, wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED);
+        EnsureVisible(index);
+    }
+    // get the currently focused item or -1 if none
+    long GetFocusedItem() const{
+        return GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED);}
+    // get first and subsequent selected items, return -1 when no more
+    long GetNextSelected(long item) const{
+        return GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);}
+    long GetFirstSelected() const{
+        return GetNextSelected(-1);}
+    // return true if the item is selected
+    bool IsSelected(long index) const{
+        return GetItemState(index, wxLIST_STATE_SELECTED) != 0;}
+    //END PROTOTYPES FROM wxListView
+    // -----------------------------------------------------------------------    
+    void OnItemRClick(wxListEvent& event);
+    void OnSelect(wxListEvent& event);
+    void OnDeSelect(wxListEvent& event);
+
+    void RClickOpenExplorer(wxCommandEvent& event);
+    void RClickCopyClipboard(wxCommandEvent& event);
+    void RClickSubMenuMoveFiletoDriveX(wxCommandEvent& event);
+    void GetFilesAndMakeFilterLists();
+    void ReSelectProperDrive(wxCommandEvent& event);
+    void RClickDefragMoveSingle(wxCommandEvent& event);
+    bool RemoveSingleFileAt();
+
+    wxListItem GetListItem(long index=-1,long col=-1);
+
+    long currentlyselected;
+    wxArrayString *currently_being_workedon_filenames;
+    
+    int n_lastItem;
+    ListSortInfo m_sortinfo; 
+    void OnColClick(wxListEvent& event );
+
+    DECLARE_EVENT_TABLE()
+
+    //overload required for virtual mode.
+	wxString OnGetItemText(long item, long column) const override;    
+};
+
+//simple struct for a out& param from ClusterMap::GetGridSizeforCMap
+struct cmapreturn
+{
+    int width, height;
+    int block_size;
+    int line_width;
+    int cell_size;
+    int blocks_per_line;
+    int lines;
+};
+
+class LegendTransientPopup;
 class ClusterMap: public wxWindow {
 public:
-    ClusterMap(wxWindow* parent);
+    explicit ClusterMap(wxWindow* parent);
     ~ClusterMap();
 
     void OnEraseBackground(wxEraseEvent& event);
     void OnPaint(wxPaintEvent& event);
-
+    ULONGLONG getLCNsfromMousePos(const wxPoint& pos);
+    void ClusterMapLegend(wxMouseEvent& event);
+    void DrawSingleRectangleBorder(HDC m_cacheDC2, int xblock, int yblock, int line_width, int cell_size, HBRUSH brush,
+        HBRUSH infill);
+    ClusterMap *m_ClusterMap;
 private:
     char *ScaleMap(int scaled_size);
-
+    void GetGridSizeforCMap(cmapreturn* gridsize);    
     int m_width;
     int m_height;
     HDC m_cacheDC;
     HBITMAP m_cacheBmp;
-
     HBRUSH m_brushes[SPACE_STATES];
+    LegendTransientPopup* m_legendPopup;
 
-    DECLARE_EVENT_TABLE()
+DECLARE_EVENT_TABLE()
 };
 
 typedef struct _JobsCacheEntry {
@@ -412,8 +589,10 @@ typedef struct _JobsCacheEntry {
     bool stopped;
 } JobsCacheEntry;
 
+//unordered map. (STD in this case)
 WX_DECLARE_HASH_MAP(int, JobsCacheEntry*, \
-    wxIntegerHash, wxIntegerEqual, JobsCache);
+    wxIntegerHash, wxIntegerEqual, JobsCache);;
+
 
 class MainFrame: public wxFrame {
 public:
@@ -428,25 +607,19 @@ public:
     void OnStartJob(wxCommandEvent& event);
     void OnPause(wxCommandEvent& event);
     void OnStop(wxCommandEvent& event);
-
     void OnShowReport(wxCommandEvent& event);
-
-    void OnSkipRem(wxCommandEvent& event);
-    void OnRescan(wxCommandEvent& event);
-
     void OnRepair(wxCommandEvent& event);
-
     void OnExit(wxCommandEvent& event);
 
     // settings menu handlers
     void OnLangTranslateOnline(wxCommandEvent& event);
     void OnLangTranslateOffline(wxCommandEvent& event);
     void OnLangOpenFolder(wxCommandEvent& event);
-
     void OnGuiOptions(wxCommandEvent& event);
-
     void OnBootEnable(wxCommandEvent& event);
     void OnBootScript(wxCommandEvent& event);
+
+    void ChooseFontDialog(wxCommandEvent& event);//genBTC fontpicker.
 
     // help menu handlers
     void OnHelpContents(wxCommandEvent& event);
@@ -461,12 +634,10 @@ public:
     void OnHelpAbout(wxCommandEvent& event);
 
     // event handlers
-    void OnActivate(wxActivateEvent& event);
+    //void OnActivate(wxActivateEvent& event);
     void OnMove(wxMoveEvent& event);
     void OnSize(wxSizeEvent& event);
 
-    void AdjustListColumns(wxCommandEvent& event);
-    void AdjustListHeight(wxCommandEvent& event);
     void AdjustSystemTrayIcon(wxCommandEvent& event);
     void AdjustTaskbarIconOverlay(wxCommandEvent& event);
     void CacheJob(wxCommandEvent& event);
@@ -474,10 +645,8 @@ public:
     void OnDefaultAction(wxCommandEvent& event);
     void OnDiskProcessingFailure(wxCommandEvent& event);
     void OnJobCompletion(wxCommandEvent& event);
-    void OnListSize(wxSizeEvent& event);
+    void OnQueryCompletion(wxCommandEvent& event);  //genBTC query.cpp
     void OnLocaleChange(wxCommandEvent& event);
-    void OnSplitChanged(wxSplitterEvent& event);
-    void PopulateList(wxCommandEvent& event);
     void ReadUserPreferences(wxCommandEvent& event);
     void RedrawMap(wxCommandEvent& event);
     void RefreshDrivesInfo(wxCommandEvent& event);
@@ -487,13 +656,40 @@ public:
     void ShowUpgradeDialog(wxCommandEvent& event);
     void Shutdown(wxCommandEvent& event);
     void UpdateStatusBar(wxCommandEvent& event);
+
+    //Volume List (mixed)
+    void AdjustListColumns(wxCommandEvent& event);
+    void AdjustListHeight(wxCommandEvent& event);
+    void OnListSize(wxSizeEvent& event);
+    void OnSplitChanged(wxSplitterEvent& event);
+    void OnSkipRem(wxCommandEvent& event);
+    void OnRescan(wxCommandEvent& event);
+    void PopulateList(wxCommandEvent& event);
     void UpdateVolumeInformation(wxCommandEvent& event);
     void UpdateVolumeStatus(wxCommandEvent& event);
+    int GetIndexFromDriveLetter();  //genBTC
+    int GetDriveLetter();           //genBTC
+
+    // Files List (new) by genBTC
+    void FilesAdjustListColumns(wxCommandEvent& event);
+    void FilesOnListSize(wxSizeEvent& event);
+    void FilesPopulateList(wxCommandEvent& event);
+    void ReSelectProperDrive(wxCommandEvent& event);
+
+    //for Query Menu (new) by genBTC
+    void QueryClusters(wxCommandEvent& event);   //genBTC query.cpp
+    void QueryOperation4(wxCommandEvent& event);   //genBTC query.cpp Op2.
+    void QueryOperation3(wxCommandEvent& event);   //genBTC query.cpp Op3.
 
     // common routines
     int  CheckOption(const wxString& name);
     void SetTaskbarProgressState(TBPFLAG flag);
     void SetTaskbarProgressValue(ULONGLONG completed, ULONGLONG total);
+
+    //for LCN Menu (new) by genBTC
+    void InitLCNPanel();                            //genBTC LCN.cpp
+    void GetAllLCNs(wxCommandEvent& event);
+    void GetSpecificLCNRange(wxCommandEvent& event);
 
     bool m_skipRem;
     bool m_busy;
@@ -510,13 +706,28 @@ public:
     JobsCache m_jobsCache;
     JobsCacheEntry *m_currentJob;
 
+    QueryThread *m_queryThread;
+
+    wxMenu     *m_RClickPopupMenu1;     //genBTC Right Click Popup Menu
+    wxMenu     *m_DriveSubMenu;         //genBTC Right Click Popup Menu
+
+    wxTextCtrl  *m_WxTextCtrl1;            //genBTC Query - tab 3.
+    wxButton    *m_PerformQuery1;             //genBTC Query - tab 3.
+    wxFilePickerCtrl *m_WxFilePickerQuery1;    //genBTC Query - tab 3.
+    wxToggleButton *m_toggleBtn1;       //genBTC LCN - tab 4
+    wxButton    *m_toggleBtn2;       //genBTC LCN - tab 4
+    volume_info  m_volinfocache;     //genBTC
+    LegendTransientPopup* m_legendPopup;    //genBTC legend.
 private:
+    int GetMapSize();       //genBTC - used by job.cpp & query.cpp
+    void InitQueryMenu();   //genBTC query.cpp
+    void InitPopupMenus();  //genBTC Right Click Popup Menu
+    void InitFilesList();    //genBTC FilesList.cpp
     void InitMenu();
     void InitToolbar();
     void InitStatusBar();
     void InitVolList();
     void ReadAppConfiguration();
-    void ReadUserPreferences();
     void ReleasePause();
     void RemoveTaskbarIconOverlay();
     void SaveAppConfiguration();
@@ -535,11 +746,15 @@ private:
     int  m_separatorPosition;
 
     // list dimensions
+    double m_fcolsr[LIST_COLUMNS]; //genBTC FilesList.cpp column ratios
+    int m_fcolsw[LIST_COLUMNS]; //genBTC FilesList.cpp column widths
     int m_vListHeight;
+    int m_filesListHeight;  //genBTC FilesList.cpp height
     int m_origColumnWidths[LIST_COLUMNS];
     int m_columnWidths[LIST_COLUMNS];
 
     wxFont *m_vListFont;
+    wxFont *m_filesListFont;  //genBTC FilesList.cpp font
 
     wxString   *m_title;
     wxToolBar  *m_toolBar;
@@ -552,9 +767,17 @@ private:
     wxMenuItem *m_subMenuUpgrade;
     wxMenu     *m_menuLanguage;
 
+    wxNotebook *m_notebook1;        //genBTC New Tabs Notebook
+    wxPanel *m_panel1;              //genBTC Tab1
+    wxSplitterWindow *m_splitter1;  //genBTC New Tabs Splitter
+    wxPanel *m_panel2;              //genBTC Tab2
+    wxPanel *m_panel3;              //genBTC Tab3
+    wxPanel *m_panel4;              //genBTC Tab4
+
     wxSplitterWindow *m_splitter;
     DrivesList       *m_vList;
     ClusterMap       *m_cMap;
+    FilesList        *m_filesList;  //genBTC FilesList.cpp
 
     bool m_btdEnabled;
     BtdThread *m_btdThread;
@@ -586,11 +809,10 @@ public:
         const wxString& parameters = wxEmptyString,
         int show = SW_SHOW, int flags = 0);
     static void ShowError(const wxString& format, ...);
+    static void createDirectoryRecursively(const std::wstring &directory);
+    static void extendfiltertext(wxString itemtext,wxString *extfiltertext);
+    static wxString makefiltertext(wxString itemtext);
 };
-
-/* flags for Utils::ShellExec */
-#define SHELLEX_SILENT  0x1
-#define SHELLEX_NOASYNC 0x2
 
 // =======================================================================
 //                           Global variables

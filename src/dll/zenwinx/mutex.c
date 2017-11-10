@@ -117,6 +117,9 @@ int winx_release_mutex(HANDLE h)
 
 /**
  * @brief Destroys a mutex.
+ * @details Closes the handle of a named mutex
+ * created/opened by winx_create_mutex() or 
+ * winx_open_mutex().
  * @param[in] h the mutex handle.
  */
 void winx_destroy_mutex(HANDLE h)

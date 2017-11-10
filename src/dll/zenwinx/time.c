@@ -27,12 +27,16 @@
 #include "prec.h"
 #include "zenwinx.h"
 
+//int winx_filetime2timefields(ULONGLONG input,TIME_FIELDS *output);//genBTC
+//int winx_timefields2winxtime(TIME_FIELDS input,winx_time *output);//genBTC
+
 /**
  * @brief Converts a string to time interval.
  * @param[in] string the string to be converted,
  * like that: 3y 12d 4h 8m 37s.
  * @return The time interval, in seconds.
  */
+//TODO: VS calls this a Buffer report range check error failure.
 ULONGLONG winx_str2time(char *string)
 {
     ULONGLONG time = 0;
@@ -46,12 +50,13 @@ ULONGLONG winx_str2time(char *string)
         return 0;
     
     for(i = 0;; i++){ /* loop through all characters of the string */
+        //TODO: Its this part that is wrong
         c = string[i];
         if(!c) break;
         if(c >= '0' && c <= '9'){
-            buffer[index] = c;
-            index++;
-        }
+                buffer[index] = c;
+                index++;
+            }
 
         k = 0;
         c = winx_toupper(c);
@@ -69,7 +74,9 @@ ULONGLONG winx_str2time(char *string)
             k = 3600 * 24;
             break;
         case 'Y':
-            k = 3600 * 24 * 356;
+            k = 3600 * 24 * 365;
+            break;
+        default:
             break;
         }
         if(k){
@@ -100,8 +107,8 @@ int winx_time2str(ULONGLONG time,char *buffer,int size)
         return 0;
 
     t = (ULONG)time;
-    y = t / (3600 * 24 * 356);
-    t = t % (3600 * 24 * 356);
+    y = t / (3600 * 24 * 365);
+    t = t % (3600 * 24 * 365);
     d = t / (3600 * 24);
     t = t % (3600 * 24);
     h = t / 3600;
@@ -239,4 +246,72 @@ int winx_get_local_time(winx_time *t)
     return 0;
 }
 
+/**
+ * @brief Converts time from ULONGLONG
+ * to NT TIME_FIELDS format.
+ * @param[out] output pointer to structure
+ * receiving the time in TIME_FIELDS format.
+ * @return Zero for success, negative value otherwise.
+ */ // made by genBTC
+int winx_filetime2timefields(ULONGLONG input,TIME_FIELDS *output)
+{
+    LARGE_INTEGER SystemTime;
+    LARGE_INTEGER LocalTime;
+    int status;
+
+    if(output == NULL)
+        return (-1);
+
+    SystemTime.QuadPart = input;
+    status = RtlSystemTimeToLocalTime(&SystemTime,&LocalTime);
+    if(status != STATUS_SUCCESS){
+        strace(status,"RtlSystemTimeToLocalTime failed");
+        return (-1);
+    }
+
+    RtlTimeToTimeFields(&LocalTime,output);
+
+    return 0;
+}
+
+/**
+ * @brief Converts time from NT TIME_FIELDS
+ * to winx_time format.
+ * @param[out] output pointer to structure
+ * receiving the time in winx_time.
+ * @return Zero for success, negative value otherwise.
+ */ //made by genBTC
+int winx_timefields2winxtime(TIME_FIELDS input,winx_time *output)
+{
+    if(output == NULL)
+        return (-1);
+
+    output->year = input.Year;
+    output->month = input.Month;
+    output->day = input.Day;
+    output->hour = input.Hour;
+    output->minute = input.Minute;
+    output->second = input.Second;
+    output->milliseconds = input.Milliseconds;
+    output->weekday = input.Weekday;
+
+    return 0;
+}
+
+/**
+ * @brief Converts time from ULONGLONG
+ * to winx_time format.
+ * @param[out] output pointer to structure
+ * receiving the time in winx_time.
+ * @return Zero for success, negative value otherwise.
+ */ //made by genBTC
+int winx_filetime2winxtime(ULONGLONG input,winx_time *output){
+
+    TIME_FIELDS temp;
+
+    winx_filetime2timefields(input,&temp);
+    winx_timefields2winxtime(temp,output);
+
+    return 0;
+}
 /** @} */

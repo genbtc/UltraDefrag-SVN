@@ -59,6 +59,13 @@ void *UpgradeThread::Entry()
             wxString dir(target.GetFullPath());
             if(!wxDirExists(dir)) wxMkdir(dir);
 
+            /*
+            * Use a subfolder to prevent configuration files
+            * reload (see ConfigThread::Entry() for details).
+            */
+            dir << wxT("\\data");
+            if(!wxDirExists(dir)) wxMkdir(dir);
+
             wxString url(wxT(""));
             wxString path(dir);
 
@@ -74,12 +81,12 @@ void *UpgradeThread::Entry()
                 wxTextFile file; file.Open(path);
                 wxString lv = file.GetFirstLine();
                 lv.Trim(true); lv.Trim(false);
-                int last = ParseVersionString(ansi(lv));
+                int last = ParseVersionString(CVT_ANSI(lv));
 
                 const char *cv = VERSIONINTITLE;
                 int current = ParseVersionString(&cv[12]);
 
-                itrace("latest version : %hs",ansi(lv));
+                itrace("latest version : %hs",CVT_ANSI(lv));
                 itrace("current version: %hs",&cv[12]);
 
                 if(last && current && last > current){
@@ -96,7 +103,7 @@ void *UpgradeThread::Entry()
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 /**
@@ -161,6 +168,8 @@ void MainFrame::OnHelpUpgrade(wxCommandEvent& event)
             // ...and check it now
         case ID_HelpUpgradeCheck:
             m_upgradeThread->m_check = true;
+    default: 
+    	break;
     }
 }
 

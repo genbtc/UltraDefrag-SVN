@@ -23,7 +23,6 @@
  * @addtogroup Strings
  * @{
  */
-
 #include "prec.h"
 #include "zenwinx.h"
 #include <math.h> /* for pow function */
@@ -658,7 +657,7 @@ int winx_bytes_to_hr(ULONGLONG bytes, int digits, char *buffer, int length)
     ULONGLONG r; /* remaining part */
     int i;       /* index for the suffixes array */
     double rd;
-    char spec[] = "%I64u.%00I64u %s";
+    char spec[] = { "%I64u.%00I64u %s" } ;
     int result;
     
     DbgCheck3(digits >= 0, buffer != NULL, length > 0, -1);
@@ -666,10 +665,18 @@ int winx_bytes_to_hr(ULONGLONG bytes, int digits, char *buffer, int length)
     for(n = bytes, m = 1, i = 0; n >> 10; n >>= 10, m <<= 10, i++){}
     r = bytes - n * m;
     
+    //This block undergoes some weird (cast)ing, and causes LINK issues on MSVC 2013,2015,2017
+    // Under the 32-Bit build on an X64 system. you can fix it by disabling the /Arch:SSE2
+    // OR There is also an "undocumented" /d2noftol3 Compiler option.
+    //You can also fix it by just linking in UCRT.lib or UCRTD.lib
     rd = (double)r / (double)m;
     if(rd >= 1) rd = 0.999999999999999;
     rd *= pow(10, digits);
     r = (ULONGLONG)rd;
+    //IF this is causing problems, you will see this:
+    //Error	LNK2019	unresolved external symbol __except1 referenced in function __ftol3_except
+    //Info @ https://stackoverflow.com/questions/19556103/how-to-get-vs2013-to-stop-generating-calls-to-dtol3-dtoui3-and-other-funct
+    // genBTC
     
     if(digits == 0){
         result = _snprintf(buffer, length - 1, "%I64u %s", n, suffixes[i]);
@@ -705,6 +712,7 @@ ULONGLONG winx_hr_to_bytes(char *string)
     
     DbgCheck1(string, 0);
 
+    //this one is fine. (genBTC):
     n = (ULONGLONG)_atoi64(string);
 
     for(i = 0, m = 1024; i < sizeof(suffixes) / sizeof(char *); i++, m <<= 10){
@@ -722,6 +730,7 @@ ULONGLONG winx_hr_to_bytes(char *string)
         for(z = 0; dp[z + 1] == '0'; z++) {}
         for(rd = (double)_atoi64(dp + 1); rd > 1; rd /= 10){}
         /* conversion to LONGLONG is needed for MinGW */
+        //also fine (genBTC):
         r = (ULONGLONG)(LONGLONG)((double)(LONGLONG)m * rd * pow(10, -z));
     }
     

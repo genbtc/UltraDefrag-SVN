@@ -34,8 +34,7 @@
  */
 void release_temp_space_regions(udefrag_job_parameters *jp)
 {
-    ULONGLONG time = winx_xtime();
-    
+    const ULONGLONG time = winx_xtime();
     if(!jp->udo.dry_run){
         winx_release_free_volume_regions(jp->free_regions);
         jp->free_regions = winx_get_free_volume_regions(jp->volume_letter,
@@ -57,7 +56,7 @@ void release_temp_space_regions(udefrag_job_parameters *jp)
  * @brief Defines whether a file can be
  * moved or not, at least partially.
  */
-int can_move(winx_file_info *f,udefrag_job_parameters *jp)
+int can_move(winx_file_info *f, fs_type_enum fstype)
 {
     wchar_t *dos_files[] = {
         L"*:\\io.sys",
@@ -83,18 +82,18 @@ int can_move(winx_file_info *f,udefrag_job_parameters *jp)
     /* skip files already moved to front in optimization */
     if(is_moved_to_front(f))
         return 0;
-    
+
     /* skip files already excluded by the current task */
     if(is_currently_excluded(f))
         return 0;
-    
+
     /* skip files with undefined cluster map and locked files */
     if(f->disp.blockmap == NULL || is_locked(f))
         return 0;
-    
+
     /* skip files of zero length */
     if(f->disp.clusters == 0 || \
-      (f->disp.blockmap->next == f->disp.blockmap && \
+        (f->disp.blockmap->next == f->disp.blockmap && \
       f->disp.blockmap->length == 0)){
         f->user_defined_flags |= UD_FILE_IMPROPER_STATE;
         return 0;
@@ -103,18 +102,18 @@ int can_move(winx_file_info *f,udefrag_job_parameters *jp)
     /* skip file in case of improper state detected */
     if(is_in_improper_state(f))
         return 0;
-    
+
     /* avoid infinite loops */
     if(is_moving_failed(f))
         return 0;
-    
+
     /* keep the computer bootable */
     if(is_not_essential_file(f)) return 1;
     if(is_essential_boot_file(f)) return 0;
-    if(jp->is_fat && !is_fragmented(f)){
+    if (is_fstype_FAT(fstype) && !is_fragmented(f)) {
         for(i = 0; dos_files[i]; i++){
             if(winx_wcsmatch(f->path,dos_files[i],WINX_PAT_ICASE)){
-                itrace("essential dos file detected: %ws",f->path);
+                itrace("essential dos file detected: %ws",f->path);    
                 f->user_defined_flags |= UD_FILE_ESSENTIAL_BOOT_FILE;
                 return 0;
             }
@@ -128,7 +127,7 @@ int can_move(winx_file_info *f,udefrag_job_parameters *jp)
         }
     }
     f->user_defined_flags |= UD_FILE_NOT_ESSENTIAL_FILE;
-    return 1;
+    return 1;   //1 = ok, can_move
 }
 
 /**
@@ -136,17 +135,17 @@ int can_move(winx_file_info *f,udefrag_job_parameters *jp)
  * @brief Defines whether s file
  * can be moved entirely or not.
  */
-int can_move_entirely(winx_file_info *f,udefrag_job_parameters *jp)
+int can_move_entirely(winx_file_info *f, fs_type_enum fstype)
 {
-    if(!can_move(f,jp))
+    if(!can_move(f, fstype))
         return 0;
 
     /* the first clusters of MFT cannot be moved */
-    if(is_mft(f,jp))
+    if(is_mft(f, fstype))
         return 0;
     
     /* the first clusters of FAT directories cannot be moved */
-    if(jp->is_fat && is_directory(f))
+    if(is_fstype_FAT(fstype) && is_directory(f))
         return 0;
         
     return 1;
@@ -738,9 +737,11 @@ int move_file(winx_file_info *f,
             jp->pi.fragmented ++;
             jp->pi.fragments += (new_file_info.disp.fragments - 1);
             jp->pi.bad_fragments += new_file_info.disp.fragments;
+            jp->pi.bad_clusters += new_file_info.disp.clusters;
         } else {
             jp->pi.fragments -= (f->disp.fragments - new_file_info.disp.fragments);
             jp->pi.bad_fragments -= (f->disp.fragments - new_file_info.disp.fragments);
+            jp->pi.bad_clusters -= (f->disp.clusters - new_file_info.disp.clusters);
         }
     }
     if(!became_fragmented || is_excluded(f)){
@@ -748,6 +749,7 @@ int move_file(winx_file_info *f,
             jp->pi.fragmented --;
             jp->pi.fragments -= (f->disp.fragments - 1);
             jp->pi.bad_fragments -= f->disp.fragments;
+            jp->pi.bad_clusters -= f->disp.clusters;
         }
     }
 

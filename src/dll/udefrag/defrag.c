@@ -125,7 +125,7 @@ void test_special_files_defrag(udefrag_job_parameters *jp)
  */
 static int can_defragment(winx_file_info *f,udefrag_job_parameters *jp)
 {
-    if(!can_move(f,jp))
+    if(!can_move(f, jp->fs_type))
         return 0;
 
     /* skip not fragmented files */
@@ -133,7 +133,7 @@ static int can_defragment(winx_file_info *f,udefrag_job_parameters *jp)
         return 0;
         
     /* skip MFT */
-    if(is_mft(f,jp))
+    if(is_mft(f,jp->fs_type))
         return 0;
     
     /* skip FAT directories */

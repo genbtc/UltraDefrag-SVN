@@ -48,7 +48,9 @@ void dbg_print_header(udefrag_job_parameters *jp)
     winx_dbg_print_header(0x20,0,I"%s",VERSIONINTITLE);
 
     /* print windows version */
-    os_version = winx_get_os_version();
+    //decide whether to call it again just in case someone
+    //  did not pre-load the version before trying to print the header.
+    os_version = jp->win_version ? jp->win_version : winx_get_os_version();
     mj = os_version / 10;
     mn = os_version % 10;
     winx_dbg_print_header(0x20,0,I"Windows NT %u.%u",mj,mn);
@@ -83,18 +85,19 @@ ULONGLONG start_timing(char *operation_name,udefrag_job_parameters *jp)
  * must be obtained from the
  * start_timing procedure.
  */
-void stop_timing(char *operation_name,ULONGLONG start_time,udefrag_job_parameters *jp)
+ULONGLONG stop_timing(char *operation_name,ULONGLONG start_time,udefrag_job_parameters *jp)
 {
-    ULONGLONG time, seconds;
+    ULONGLONG time, seconds,returntime;
     char buffer[32];
     
-    time = winx_xtime() - start_time;
+    returntime = time = winx_xtime() - start_time;
     seconds = time / 1000;
-    winx_time2str(seconds,buffer,sizeof(buffer));
+    winx_time2str(seconds,buffer,sizeof buffer);
     time -= seconds * 1000;
     winx_dbg_print_header(0,0,I"%s of %c: completed in %s %I64ums",
         operation_name,jp->volume_letter,buffer,time);
     jp->progress_trigger = 0;
+    return returntime;
 }
 
 /**
@@ -115,12 +118,8 @@ static void dbg_print_single_counter(udefrag_job_parameters *jp,ULONGLONG counte
     winx_time2str(seconds,buffer,sizeof(buffer));
     time -= seconds * 1000;
     
-    if(jp->p_counters.overall_time == 0){
-        p = 0.00;
-    } else {
-        p = (double)counter / (double)jp->p_counters.overall_time;
-    }
-    ip = (unsigned int)(p * 10000);
+    p = calc_percentage(counter,jp->p_counters.overall_time);
+    ip = (unsigned int)(p * 100);
     s = winx_sprintf("%s %I64ums",buffer,time);
     if(s == NULL){
         itrace(" - %s %-18s %6I64ums  %3u.%02u %%",name,buffer,time,ip / 100,ip % 100);
@@ -140,12 +139,11 @@ void dbg_print_performance_counters(udefrag_job_parameters *jp)
     ULONGLONG time, seconds;
     char buffer[32];
     
-    winx_dbg_print_header(0,0,I"*");
-
     time = jp->p_counters.overall_time;
     seconds = time / 1000;
     winx_time2str(seconds,buffer,sizeof(buffer));
     time -= seconds * 1000;
+    winx_dbg_print_header(0,0,I"*");
     itrace("volume processing completed in %s %I64ums:",buffer,time);
     dbg_print_single_counter(jp,jp->p_counters.analysis_time,             "analysis ...............");
     dbg_print_single_counter(jp,jp->p_counters.searching_time,            "searching ..............");
@@ -165,6 +163,14 @@ void dbg_print_footer(udefrag_job_parameters *jp)
     winx_dbg_print_header(0,0,I"Processing of %c: %s",
         jp->volume_letter, (jp->pi.completion_status > 0) ? "succeeded" : "failed");
     winx_dbg_print_header(0,0,I"*");
+}
+
+double calc_percentage(ULONGLONG x,ULONGLONG y)
+{
+    if(y == 0) 
+        return (0.00);
+    else 
+        return (double)x / (double)y * 100.00;
 }
 
 /** @} */

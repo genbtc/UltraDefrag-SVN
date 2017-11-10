@@ -36,29 +36,30 @@ call build.cmd --all --use-mingw --dev --pdf --trans || goto build_failed
 copy .\bin\ultradefrag-%UDVERSION_SUFFIX%.bin.i386.exe .\release\
 copy .\bin\ultradefrag-portable-%UDVERSION_SUFFIX%.bin.i386.zip .\release\
 
-:: build 64-bit binaries using Windows SDK
-call build.cmd --all --use-winsdk --no-x86 || goto build_failed
+:: build 64-bit binaries using Windows SDK (Skip IA64)
+call build.cmd --all --use-winsdk --no-x86 --no-ia64 || goto build_failed
 copy .\bin\amd64\ultradefrag-%UDVERSION_SUFFIX%.bin.amd64.exe .\release\
 copy .\bin\amd64\ultradefrag-portable-%UDVERSION_SUFFIX%.bin.amd64.zip .\release\
-copy .\bin\ia64\ultradefrag-%UDVERSION_SUFFIX%.bin.ia64.exe .\release\
-copy .\bin\ia64\ultradefrag-portable-%UDVERSION_SUFFIX%.bin.ia64.zip .\release\
+::Skip IA-64 bit binaries.
+::copy .\bin\ia64\ultradefrag-%UDVERSION_SUFFIX%.bin.ia64.exe .\release\
+::copy .\bin\ia64\ultradefrag-portable-%UDVERSION_SUFFIX%.bin.ia64.zip .\release\
 
 :: update history file
-copy /Y .\HISTORY.TXT ..\..\web\
+::copy /Y .\HISTORY.TXT ..\..\web\
 
 :: update version notification
 set version_string=%ULTRADFGVER%
 if "%RELEASE_STAGE%" neq "" set version_string=%ULTRADFGVER% %RELEASE_STAGE%
 
-echo %version_string%> ..\..\web\version.ini
-echo %version_string%> ..\..\web\version_xp.ini
+::echo %version_string%> ..\..\web\version.ini
+::echo %version_string%> ..\..\web\version_xp.ini
 
-if "%RELEASE_STAGE%" equ "" echo %version_string%> ..\..\web\stable-version.ini
+::if "%RELEASE_STAGE%" equ "" echo %version_string%> ..\..\web\stable-version.ini
 
 :: update documentation
-copy /Y ..\doc\handbook\doxy-doc\html\*.* ..\..\web\handbook        || goto build_failed
-copy /Y .\dll\udefrag\doxy-doc\html\*.*   ..\..\web\doc\lib\udefrag || goto build_failed
-copy /Y .\dll\zenwinx\doxy-doc\html\*.*   ..\..\web\doc\lib\zenwinx || goto build_failed
+::copy /Y ..\doc\handbook\doxy-doc\html\*.* ..\..\web\handbook        || goto build_failed
+::copy /Y .\dll\udefrag\doxy-doc\html\*.*   ..\..\web\doc\lib\udefrag || goto build_failed
+::copy /Y .\dll\zenwinx\doxy-doc\html\*.*   ..\..\web\doc\lib\zenwinx || goto build_failed
 
 echo.
 echo Release made successfully!

@@ -148,7 +148,6 @@ wchar_t *winx_get_module_filename(void)
  */
 int winx_create_path(wchar_t *path)
 {
-    /*wchar_t rootdir[] = L"\\??\\X:\\";*/
     winx_volume_information v;
     wchar_t *p;
     size_t n;
@@ -165,11 +164,6 @@ int winx_create_path(wchar_t *path)
     n = wcslen(L"\\??\\X:\\");
     if(wcslen(path) <= n){
         /* check for the volume existence */
-        /*
-        rootdir[4] = path[4];
-        // may fail with access denied status
-        return winx_create_directory(rootdir);
-        */
         return winx_get_volume_information((char)path[4],&v);
     }
     

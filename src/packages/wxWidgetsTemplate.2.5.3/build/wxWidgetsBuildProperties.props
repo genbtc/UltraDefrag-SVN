@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <ItemGroup>
+    <!--wxWidgetsOptions Defaults; Do Not Change -->
+    <BuildMacro Include="wxWidgets">
+      <Value>$(wxWidgets)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxShortVersionString">
+      <Value>$(wxShortVersionString)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxArchSuffix">
+      <Value>$(wxArchSuffix)</Value>
+    </BuildMacro>    
+    <BuildMacro Include="ARCH_SUFFIX">
+      <Value>$(ARCH_SUFFIX)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxToolkitPrefix">
+      <Value>$(wxToolkitPrefix)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxCompilerPrefix">
+      <Value>$(wxCompilerPrefix)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxVendor">
+      <Value>$(wxVendor)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxCfg">
+      <Value>$(wxCfg)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxSuffix">
+      <Value>$(wxSuffix)</Value>
+    </BuildMacro>    
+    <BuildMacro Include="LIBTYPE_SUFFIX">
+      <Value>$(LIBTYPE_SUFFIX)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxMSVC_VERSION">
+      <Value>$(wxMSVC_VERSION)</Value>
+    </BuildMacro>
+    <BuildMacro Include="BuildwxWidgets">
+      <Value>$(BuildwxWidgets)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PrintMSBuildVars">
+      <Value>$(PrintMSBuildVars)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxIncSubDir">
+      <Value>$(wxIncSubDir)</Value>
+    </BuildMacro>    
+    <BuildMacro Include="wxOutDirName">
+      <Value>$(wxOutDirName)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wxOutDir">
+      <Value>$(wxOutDir)</Value>
+    </BuildMacro>
+  </ItemGroup>
+  <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='Win32'">
+    <wxArchSuffix />
+    <ARCH_SUFFIX Condition="'$(Platform)'=='Win32'" />
+  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
+    <wxArchSuffix>_x64</wxArchSuffix>
+    <ARCH_SUFFIX Condition="'$(Platform)'=='x64'">_x64</ARCH_SUFFIX>
+  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='Itanium'">
+    <wxArchSuffix>_ia64</wxArchSuffix>
+    <ARCH_SUFFIX Condition="'$(Platform)'=='Itanium'">_ia64</ARCH_SUFFIX>
+  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" Condition="('$(Configuration)'=='Debug' or '$(Configuration)'=='DLL Debug') and '$(CharacterSet)'=='Unicode'">
+    <wxSuffix>ud</wxSuffix>
+  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" Condition="('$(Configuration)'=='Debug' or '$(Configuration)'=='DLL Debug') and '$(CharacterSet)'!='Unicode'">
+    <wxSuffix>d</wxSuffix>
+  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" Condition="('$(Configuration)'=='Release' or '$(Configuration)'=='DLL Release') and '$(CharacterSet)'=='Unicode'">
+    <wxSuffix>u</wxSuffix>
+  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" Condition="('$(Configuration)'=='Release' or '$(Configuration)'=='DLL Release') and '$(CharacterSet)'!='Unicode'">
+    <wxSuffix>
+    </wxSuffix>
+  </PropertyGroup>
+  <PropertyGroup Label="UserMacros">
+    <!--wxWidgetsOptions Defaults; UI settings override-->
+    <wxWidgets>$(wxWidgets)</wxWidgets>
+    <wxShortVersionString>31</wxShortVersionString>
+    <wxToolkitPrefix>msw</wxToolkitPrefix>
+    <wxCompilerPrefix>vc$(PlatformToolsetVersion)</wxCompilerPrefix>
+    <wxVendor>_udefrag</wxVendor>
+    <wxCfg />
+    <LIBTYPE_SUFFIX>dll</LIBTYPE_SUFFIX>
+    <!--Issue here in automatic deduction of wxMSVC_VERSION is $(PlatformToolsetVersion) is defined in the .targets file.-->
+    <COMPILER_PREFIX>vc</COMPILER_PREFIX>
+    <wxMSVC_VERSION>'$(PlatformToolsetVersion)'</wxMSVC_VERSION>
+    <BuildwxWidgets>false</BuildwxWidgets>
+    <PrintMSBuildVars>true</PrintMSBuildVars>
+    <!-- Dont touch -->  
+    <WXDEBUGFLAG Condition="'$(UseDebugLibraries)'=='true'">d</WXDEBUGFLAG>
+    <WXDEBUGFLAG Condition="'$(UseDebugLibraries)'!='true'" />
+    <WXUNICODEFLAG>u</WXUNICODEFLAG>
+    <!-- Resulting constructed Paths -->
+    <wxIncSubDir>$(wxToolkitPrefix)$(wxSuffix)</wxIncSubDir>
+    <wxOutDirName>$(wxCompilerPrefix)$(wxArchSuffix)_$(wxLibTypeSuffix)$(wxCfg)</wxOutDirName>
+    <wxOutDir>..\..\lib\$(wxOutDirName)\</wxOutDir>    
+    <wxToolkitDllNamePrefix>wx$(wxToolkitPrefix)$(wxShortVersionString)$(wxSuffix)_</wxToolkitDllNamePrefix>
+    <wxToolkitDllNameSuffix>_$(wxCompilerPrefix)$(wxArchSuffix)_$(wxVendor)</wxToolkitDllNameSuffix>
+    <wxToolkitLibNamePrefix>wx$(wxToolkitPrefix)$(wxShortVersionString)$(wxSuffix)_</wxToolkitLibNamePrefix>
+    <wxBaseLibNamePrefix>wxbase$(wxShortVersionString)$(wxSuffix)</wxBaseLibNamePrefix>
+    <!--Each appear to be re-evaluated during build: in VS2010 are re-evaluated on condition-param change, in VS2012 are re-evaluated at a time before they are used in the build.-->
+  </PropertyGroup>
+
+</Project>

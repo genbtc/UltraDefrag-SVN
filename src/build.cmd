@@ -262,10 +262,10 @@ rem removal of all intermediate files.
     rd /s /q ..\doc\handbook\doxy-defaults_letter
     if %UD_BLD_FLG_ONLY_CLEANUP% equ 1 rd /s /q release
 
-    del /f /q ..\..\web\doc\lib\udefrag\*.*
-    del /f /q ..\..\web\doc\lib\zenwinx\*.*
+    ::del /f /q ..\..\web\doc\lib\udefrag\*.*
+    ::del /f /q ..\..\web\doc\lib\zenwinx\*.*
 
-    for %%F in ( "..\..\web\handbook\*.*" ) do if not "%%~nxF" == ".htaccess" del /f /q "%%~F"
+    ::for %%F in ( "..\..\web\handbook\*.*" ) do if not "%%~nxF" == ".htaccess" del /f /q "%%~F"
 goto :EOF
 
 rem Displays usage information.

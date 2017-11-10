@@ -56,11 +56,14 @@ void MainFrame::InitVolList()
     // set mono-space font for the list unless Burmese translation is selected
     if(g_locale->GetCanonicalName().Left(2) != wxT("my")){
         wxFont font = m_vList->GetFont();
-        if(font.SetFaceName(wxT("Courier New"))){
+        if(font.SetFaceName(wxT("Lucida Console"))){
             font.SetPointSize(DPI(9));
             m_vList->SetFont(font);
         }
     }
+
+    //account for the borders
+    //int border = wxSystemSettings::GetMetric(wxSYS_BORDER_X);//genBTC
 
     // adjust widths so all the columns will fit to the window
     int oldListWidth = 0;
@@ -70,7 +73,6 @@ void MainFrame::InitVolList()
     int lastColumnWidth = newListWidth;
 
     // dtrace("client width ......... %d", newListWidth);
-
     int format[] = {
         wxLIST_FORMAT_LEFT, wxLIST_FORMAT_LEFT,
         wxLIST_FORMAT_RIGHT, wxLIST_FORMAT_RIGHT,
@@ -107,7 +109,7 @@ void MainFrame::InitVolList()
 
     GetEventHandler()->Connect(wxEVT_SIZE,wxSizeEventHandler(MainFrame::OnListSize),NULL,this);
     m_splitter->GetEventHandler()->Connect(wxEVT_COMMAND_SPLITTER_SASH_POS_CHANGED,
-        wxSplitterEventHandler(MainFrame::OnSplitChanged),NULL,this);
+        wxSplitterEventHandler(MainFrame::OnSplitChanged), nullptr,this);
 }
 
 // =======================================================================
@@ -117,21 +119,61 @@ void MainFrame::InitVolList()
 BEGIN_EVENT_TABLE(DrivesList, wxListView)
     EVT_KEY_DOWN(DrivesList::OnKeyDown)
     EVT_KEY_UP(DrivesList::OnKeyUp)
-    EVT_MOUSE_EVENTS(DrivesList::OnMouse)
-    EVT_LIST_ITEM_SELECTED(wxID_ANY,DrivesList::OnSelectionChange)
-    EVT_LIST_ITEM_DESELECTED(wxID_ANY,DrivesList::OnSelectionChange)
-END_EVENT_TABLE()
+    EVT_LEFT_DCLICK(DrivesList::OnMouse)
+    EVT_LIST_ITEM_SELECTED(wxID_ANY, DrivesList::OnSelectionChange)
+    EVT_LIST_ITEM_DESELECTED(wxID_ANY, DrivesList::OnSelectionChange)
+END_EVENT_TABLE();
 
-void DrivesList::OnKeyDown(wxKeyEvent& event)
+//without a parameter it defaults to currently selected.
+char DrivesList::GetLetter(int i)
 {
-    if(!g_mainFrame->m_busy) event.Skip();
+    if (i == -1)
+        i = GetFirstSelected();
+    if (i != -1)
+        return GetItemText(i)[0];
+    else
+        return 0;
+}
+
+void DrivesList::DeSelectAll()
+{
+    int n = GetItemCount();
+    for (int i = 0; i < n; i++)
+        SetItemState(i, 0, wxLIST_STATE_SELECTED);
+}
+
+int DrivesList::GetIndexFromLetter(char sel)
+{
+    if (!sel)
+        sel = GetLetter();
+    int i,total = GetItemCount();    
+    for (i = 0; i < total; i++) {
+        char letter = GetLetter(i);
+        if (sel == letter) break;
+    }
+    return i;
+}
+
+int MainFrame::GetIndexFromDriveLetter()
+{
+    return m_vList->GetIndexFromLetter();
+}
+int MainFrame::GetDriveLetter()
+{
+    return m_vList->GetLetter();
+}
+
+void DrivesList::OnKeyDown(wxKeyEvent & event)
+{
+    if (!g_mainFrame->m_busy) event.Skip();
 }
 
 void DrivesList::OnKeyUp(wxKeyEvent& event)
 {
     if(!g_mainFrame->m_busy){
-        // dtrace("Modifier: %d ... KeyCode: %d",
-        //    event.GetModifiers(), event.GetKeyCode());
+/*         dtrace("Modifier: %d ... KeyCode: %d", \
+ *             event.GetModifiers(), event.GetKeyCode());
+ */
         switch(event.GetKeyCode()){
         case WXK_RETURN:
         case WXK_NUMPAD_ENTER:
@@ -152,18 +194,17 @@ void DrivesList::OnKeyUp(wxKeyEvent& event)
 void DrivesList::OnMouse(wxMouseEvent& event)
 {
     if(!g_mainFrame->m_busy){
-        // left double click starts default action
-        if(event.GetEventType() == wxEVT_LEFT_DCLICK)
             QueueCommandEvent(g_mainFrame,ID_DefaultAction);
         event.Skip();
     }
 }
 
+///TODO: if a defrag job is going off, allow it to Switch.
+///  But we have to disable the Defrag job from auto redrawing into that space if we have switched.
 void DrivesList::OnSelectionChange(wxListEvent& event)
 {
-    long i = GetFirstSelected();
-    if(i != -1){
-        char letter = (char)GetItemText(i)[0];
+    const char letter = GetLetter();
+    if(letter != NULL){
         JobsCacheEntry *currentJob = g_mainFrame->m_jobsCache[(int)letter];
         if(g_mainFrame->m_currentJob != currentJob){
             g_mainFrame->m_currentJob = currentJob;
@@ -284,17 +325,20 @@ void MainFrame::OnListSize(wxSizeEvent& event)
 {
     int old_width = m_vList->GetClientSize().GetWidth();
     int new_width = this->GetClientSize().GetWidth();
-    new_width -= 2 * wxSystemSettings::GetMetric(wxSYS_EDGE_X);
+    new_width -= 4 * wxSystemSettings::GetMetric(wxSYS_EDGE_X);
     if(m_vList->GetCountPerPage() < m_vList->GetItemCount())
         new_width -= wxSystemSettings::GetMetric(wxSYS_VSCROLL_X);
 
     // scale list columns; avoid horizontal scrollbar appearance
     wxCommandEvent evt(wxEVT_COMMAND_MENU_SELECTED,ID_AdjustListColumns);
     evt.SetInt(new_width);
-    if(new_width <= old_width)
+    if(new_width < old_width)
         GetEventHandler()->ProcessEvent(evt);
-    else
+        //dtrace("Vols. new_width %d was < %d", new_width,old_width);
+    else if(new_width > old_width){
         GetEventHandler()->AddPendingEvent(evt);
+        //dtrace("Vols. new_width %d was > %d", new_width,old_width);
+    }
 
     event.Skip();
 }
@@ -307,12 +351,13 @@ void *ListThread::Entry()
 {
     while(!g_mainFrame->CheckForTermination(200)){
         if(m_rescan){
+            dtrace("About to populate drive list from ListThread Scanner in vollist.cpp");
             QueueCommandEvent(g_mainFrame,ID_PopulateList);
             m_rescan = false;
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 void *RefreshDrivesInfoThread::Entry()
@@ -332,17 +377,14 @@ void MainFrame::UpdateVolumeInformation(wxCommandEvent& event)
     int index = event.GetInt();
     volume_info *v = (volume_info *)event.GetClientData();
 
-    if(!v){ // the request has been made from the running job
-        int i;
-        for(i = 0; i < m_vList->GetItemCount(); i++){
-            char letter = (char)m_vList->GetItemText(i)[0];
-            if((char)index == letter) break;
-        }
-
+    if(!v){ // the request has been made from the running job (job.cpp@ProcessVolume)
+        int i = m_vList->GetIndexFromLetter();
         if(i < m_vList->GetItemCount()){
             v = new volume_info;
+            dtrace("The running job wants to refresh volume information for Drive: %c",(char)index);
             int result = udefrag_get_volume_information((char)index,v);
             if(result < 0){ delete v; return; }
+            m_volinfocache = *v;    //genBTC, make a copy/cache of the volume info.(for fileslist.cpp)
             index = i;
         }
     }
@@ -358,7 +400,7 @@ void MainFrame::UpdateVolumeInformation(wxCommandEvent& event)
         if(m_vList->GetItemText(index,1) == msg)
             m_vList->SetItem(index,1,wxT(""));
     }
-
+    dtrace("Updated Volume Information for Drive: %c", v->letter);
     char s[32]; wxString string;
     ::winx_bytes_to_hr((ULONGLONG)(v->total_space.QuadPart),2,s,sizeof(s));
     string.Printf(wxT("%hs"),s); m_vList->SetItem(index,3,string);
@@ -380,15 +422,16 @@ void MainFrame::UpdateVolumeStatus(wxCommandEvent& event)
     char letter = (char)event.GetInt();
     JobsCacheEntry *cacheEntry = m_jobsCache[(int)letter];
     if(!cacheEntry) return;
+	//search for which drive we are updating by iterating through the vol list
 
     int index;
     for(index = 0; index < m_vList->GetItemCount(); index++){
         if(letter == (char)m_vList->GetItemText(index)[0]) break;
     }
-    if(index >= m_vList->GetItemCount()) return;
+    if(index >= m_vList->GetItemCount()) return; //exit if we cant find any
 
     wxString status;
-    if(cacheEntry->pi.completion_status == 0 || cacheEntry->stopped){
+    if(cacheEntry->pi.completion_status == 0){
         if(cacheEntry->pi.current_operation == VOLUME_ANALYSIS){
             //: Status of the running disk analysis,
             //: expands to "10 % analyzed".
@@ -412,10 +455,13 @@ void MainFrame::UpdateVolumeStatus(wxCommandEvent& event)
                 cacheEntry->pi.percentage,cacheEntry->pi.pass_number,cacheEntry->pi.total_moves
             );
         }
-    } else {
+    } 
+    if (cacheEntry->stopped)
+        status << " - " << _("STOPPED") << ".";
+    if (cacheEntry->pi.completion_status != 0) {
         if(cacheEntry->jobType == ANALYSIS_JOB){
             //: Status of the completed disk analysis.
-            status = _("Analyzed");
+            status << _("Analyzed");
         } else if(cacheEntry->jobType == DEFRAGMENTATION_JOB){
             //: Status of the completed disk defragmentation,
             //: expands to "Defragmented, in 5 passes".
@@ -441,12 +487,16 @@ void MainFrame::UpdateVolumeStatus(wxCommandEvent& event)
     m_vList->SetItem(index,2,fragmentation);
 }
 
+//TODO: Ticking Show/Scan Removable Drives does an event on this function
+//  Dont create multiple added "Move File to Drive X" sub menus. 
 void MainFrame::PopulateList(wxCommandEvent& event)
 {
+    //should only happen once.
     volume_info *v = ::udefrag_get_vollist(m_skipRem);
     if(!v) return;
 
     m_vList->DeleteAllItems();
+    m_DriveSubMenu = new wxMenu();  //make the submenu of fileslist popupmenu.
 
     for(int i = 0; v[i].letter; i++){
         wxString s = wxString::Format(
@@ -467,7 +517,12 @@ void MainFrame::PopulateList(wxCommandEvent& event)
         e.SetId(ID_UpdateVolumeStatus);
         e.SetInt((int)v[i].letter);
         GetEventHandler()->ProcessEvent(e);
+
+        m_DriveSubMenu->Append(2000+(int)v[i].letter,label,L""); //Adding each drive to submenu
+        // encode the drive-letter char as an int + 2000 in the EventID, and listen on a range of ID's from 2065-2090 (A-Z)
+        // when clicked, this ID will run FilesList::RClickSubMenuMoveFiletoDriveX(wxCommandEvent& event) @ fileslist.cpp
     }
+    m_RClickPopupMenu1->AppendSubMenu(m_DriveSubMenu,"Move file to Drive:");    //add the submenu to the menu.
 
     ProcessCommandEvent(this,ID_AdjustListColumns);
 

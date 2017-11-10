@@ -41,7 +41,7 @@
 //                            Global variables
 // =======================================================================
 
-wxLocale *g_locale = NULL;
+wxLocale *g_locale = nullptr;
 
 // =======================================================================
 //                         Internationalization
@@ -159,8 +159,9 @@ void MainFrame::OnLocaleChange(wxCommandEvent& event)
 
     // main menu
     m_menuBar->SetMenuLabel(0, _("&Action"));
-    m_menuBar->SetMenuLabel(1, _("&Settings"));
-    m_menuBar->SetMenuLabel(2, _("&Help"));
+    m_menuBar->SetMenuLabel(1, _("&Query"));
+    m_menuBar->SetMenuLabel(2, _("&Settings"));
+    m_menuBar->SetMenuLabel(3, _("&Help"));
 
     // action menu
     UD_UpdateMenuItemLabel(ID_Analyze    , "&Analyze"              , "F5");
@@ -186,11 +187,19 @@ void MainFrame::OnLocaleChange(wxCommandEvent& event)
     UD_UpdateMenuItemLabel(ID_WhenDoneReboot    , "&Reboot"    , "");
     UD_UpdateMenuItemLabel(ID_WhenDoneShutdown  , "&Shutdown"  , "");
 
+    //genBTC Query Menu: @ created in menu.cpp - line 114
+    UD_UpdateMenuItemLabel(ID_QueryClusters, L"Show File's &Clusters", "");
+    UD_UpdateMenuItemLabel(ID_QueryFreeGaps, L"Show Free Region &Gaps", "");    //genBTC Query Menu
+    UD_UpdateMenuItemLabel(ID_QueryOperation2, L"ID_QueryOperation2", "");
+    UD_UpdateMenuItemLabel(ID_QueryOperation3, L"Stopgap: enumerate_gaps", "");    
+    UD_UpdateMenuItemLabel(ID_QueryOperation4, L"Stopgap: count_gaps", "");
+
     // settings menu
     m_subMenuLanguage->SetItemLabel(_("&Language"));
     UD_UpdateMenuItemLabel(ID_GuiOptions , "&Options" , "F10");
     m_subMenuSortingConfig->SetItemLabel(_("&Sorting"));
     m_subMenuBootConfig->SetItemLabel(_("&Boot time scan"));
+    UD_UpdateMenuItemLabel(ID_ChooseFont , "&Change Font..." , "");
 
     // language sub-menu
     UD_UpdateMenuItemLabel(ID_LangTranslateOnline  , "Translate &online"    , "");
@@ -247,10 +256,17 @@ void MainFrame::OnLocaleChange(wxCommandEvent& event)
     //xgettext:no-c-format
     item.SetText(_("% free"));        m_vList->SetColumn(5,item);
 
+    item.SetText(_("Filename"));      m_filesList->SetColumn(0,item);
+    item.SetText(_("Fragments"));     m_filesList->SetColumn(1,item);
+    item.SetText(_("Size"));          m_filesList->SetColumn(2,item);
+    item.SetText(_("Info"));          m_filesList->SetColumn(3,item);
+    item.SetText(_("Status"));        m_filesList->SetColumn(4,item);
+    item.SetText(_("Last Modified")); m_filesList->SetColumn(5,item);
+
     // set mono-space font for the list unless Burmese translation is selected
     if(g_locale->GetCanonicalName().Left(2) != wxT("my")){
         wxFont font = m_vList->GetFont();
-        if(font.SetFaceName(wxT("Courier New")))
+        if(font.SetFaceName("Lucida Console"))
             m_vList->SetFont(font);
     } else {
         m_vList->SetFont(*m_vListFont);
@@ -258,7 +274,7 @@ void MainFrame::OnLocaleChange(wxCommandEvent& event)
 
     // update list status fields
     for(int i = 0; i < m_vList->GetItemCount(); i++){
-        int letter = (int)m_vList->GetItemText(i)[0];
+        int letter = (int)m_vList->GetLetter(i);
         wxCommandEvent event(wxEVT_COMMAND_MENU_SELECTED,ID_UpdateVolumeStatus);
         event.SetInt(letter); GetEventHandler()->ProcessEvent(event);
     }
@@ -323,7 +339,6 @@ void MainFrame::OnLangTranslateOffline(wxCommandEvent& WXUNUSED(event))
 void MainFrame::OnLangOpenFolder(wxCommandEvent& WXUNUSED(event))
 {
     wxString AppPoDir(wxGetCwd() + wxT("/po"));
-
     if(!wxDirExists(AppPoDir)){
         etrace("po dir not found: %ls",ws(AppPoDir));
     } else {
