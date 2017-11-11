@@ -167,10 +167,7 @@ void dbg_print_footer(udefrag_job_parameters *jp)
 
 double calc_percentage(ULONGLONG x,ULONGLONG y)
 {
-    if(y == 0) 
-        return (0.00);
-    else 
-        return (double)x / (double)y * 100.00;
+    return (y == 0) ? 0.00 : (double)x / (double)y * 100.00;
 }
 
 /** @} */

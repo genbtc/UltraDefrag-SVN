@@ -19,7 +19,8 @@ struct Operation {
   bool replaced;
 
   Operation()
-    : moved(0), movedLen(0), last(nullptr), replaced(false) {
+        : moved(0), movedLen(0), start(0), last(nullptr), replaced(false)
+    {
     LARGE_INTEGER li;
     ::QueryPerformanceFrequency(&li);
     freq = li.QuadPart;
@@ -34,13 +35,10 @@ struct Operation {
   std::wstring metrics() const;
 };
 
-typedef Operation oppy;
-
 class Exit : public std::exception
 {
 public:
-  Exit(int code) : std::exception("Exiting program"), code_(code) {}
-
+    explicit Exit(int code) : std::exception("Exiting program"), code_(code) {}
   const int code_;
 };
 

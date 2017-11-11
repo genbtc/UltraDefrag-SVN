@@ -209,16 +209,11 @@ int query_get_VCNlist(udefrag_job_parameters *jp)
             return (-1);
         }
     }
+    //TODO: This assumes file disp is there and everything went ok, BUT 
+    // this FAILS after a stopgap_enumerates (and likely a volume_close) and tries to run this thing again.
     jp->qp.filedisp = file->disp;
     dtrace("The VCNList Query has been stored in the qp. Throwing back to QueryThread to display it..");
-/*    winx_scan_disk_release(jp->filelist);
-    winx_release_free_volume_regions(jp->free_regions);
-    if(jp->fragmented_files) 
-        prb_destroy(jp->fragmented_files,NULL);
-
-    jp->qp.engineFinished = TRUE;    */
     /*cleanup*/
-    //winx_free(file);
     winx_free(native_path);
     clear_currently_excluded_flag(jp); //again?
     winx_fclose(jp->fVolume);

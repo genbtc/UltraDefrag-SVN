@@ -136,29 +136,23 @@
     <CodeAnalysisRuleSet>NativeMinimumRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>true</LinkIncremental>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>NDEBUG;_NO_CRT_STDIO_INLINE;_CRT_NON_CONFORMING_SWPRINTFS;DEBUG;_DEBUG;BUILD_DLL;WIN32;_WIN32;_MBCS;USE_WINSDK;_CRT_SECURE_NO_WARNINGS;_CONSOLE;_USRDLL;ZENWINX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_NO_CRT_STDIO_INLINE;_CRT_NON_CONFORMING_SWPRINTFS;BUILD_DLL;WIN32;_WIN32;_MBCS;USE_WINSDK;_CRT_SECURE_NO_WARNINGS;_CONSOLE;_USRDLL;ZENWINX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ErrorReporting>
       </ErrorReporting>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType />
       <ForceConformanceInForLoopScope />
-      <AssemblerOutput>NoListing</AssemblerOutput>
       <PrecompiledHeaderFile>prec.h</PrecompiledHeaderFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <CompileAs>CompileAsC</CompileAs>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -194,6 +188,7 @@
       <ImageHasSafeExceptionHandlers />
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <AdditionalLibraryDirectories>..\bin;..\lib;$(SolutionDir)$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Lib>
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
@@ -215,7 +210,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>NDEBUG;_NO_CRT_STDIO_INLINE;_CRT_NON_CONFORMING_SWPRINTFS;DEBUG;_DEBUG;BUILD_DLL;WIN32;_WIN32;_MBCS;USE_WINSDK;_CRT_SECURE_NO_WARNINGS;_CONSOLE;_USRDLL;ZENWINX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_NO_CRT_STDIO_INLINE;_CRT_NON_CONFORMING_SWPRINTFS;BUILD_DLL;WIN32;_WIN32;_MBCS;USE_WINSDK;_CRT_SECURE_NO_WARNINGS;_CONSOLE;_USRDLL;ZENWINX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ErrorReporting>
       </ErrorReporting>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -223,17 +218,13 @@
       </TreatWChar_tAsBuiltInType>
       <ForceConformanceInForLoopScope>
       </ForceConformanceInForLoopScope>
-      <AssemblerOutput>NoListing</AssemblerOutput>
       <PrecompiledHeaderFile>prec.h</PrecompiledHeaderFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <CompileAs>CompileAsC</CompileAs>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -271,6 +262,7 @@
       </DataExecutionPrevention>
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <AdditionalLibraryDirectories>..\bin;..\lib;$(SolutionDir)$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Lib>
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
@@ -298,7 +290,6 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType />
       <ForceConformanceInForLoopScope />
-      <AssemblerOutput>NoListing</AssemblerOutput>
       <PrecompiledHeaderFile>prec.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -368,7 +359,6 @@
       </TreatWChar_tAsBuiltInType>
       <ForceConformanceInForLoopScope>
       </ForceConformanceInForLoopScope>
-      <AssemblerOutput>NoListing</AssemblerOutput>
       <PrecompiledHeaderFile>prec.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>

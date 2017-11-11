@@ -310,7 +310,7 @@ static DWORD WINAPI start_job(LPVOID p)
     if(jp->pi.completion_status == 0)
         jp->pi.completion_status ++; /* success */
     
-    winx_exit_thread(0); /* 8k/12k memory leak here?   ???whocares... */
+    winx_exit_thread(0); // 8k/12k memory leak here?
     return 0;
     //Goes back to udefrag_start_job@line475
 }
@@ -323,23 +323,23 @@ static DWORD WINAPI start_job(LPVOID p)
 
 void destroy_lists(udefrag_job_parameters *jp)
 {
-    ULONGLONG start,end;
-    start = winx_xtime();
+    //ULONGLONG start,end;
+    //start = winx_xtime();
     if (jp->fragmented_files) {
-        dtrace("Destroying PRB jp->fragmented_files for Drive: %c...",jp->volume_letter);
+        //dtrace("Destroying PRB jp->fragmented_files for Drive: %c...",jp->volume_letter);
         prb_destroy(jp->fragmented_files, NULL);
         jp->fragmented_files = NULL;
     }
     if (jp->filelist) {
-        dtrace("Releasing jp->filelist...");
+        //dtrace("Releasing jp->filelist...");
         winx_ftw_release(jp->filelist);
     }
     if (jp->free_regions) {
-        dtrace("Releasing jp->free_regions...");
+        //dtrace("Releasing jp->free_regions...");
         winx_release_free_volume_regions(jp->free_regions);
     }
-    end = winx_xtime();
-    dtrace("Cleanup Finished. The list-deletion took: %d msec.",end-start);
+    //end = winx_xtime();
+    //dtrace("Cleanup Finished. The list-deletion took: %d msec.",end-start);
     listsCleaned = TRUE;
 }
 
@@ -357,7 +357,7 @@ static DWORD WINAPI wait_delete_lists_thread(LPVOID p)
     while(!gui_finished)
     {
         delwaitcount++;
-        dtrace("Sleeping 250ms waiting for GUI to come back. Wait Count = %d", delwaitcount);
+        //dtrace("Sleeping 250ms waiting for GUI to come back. Wait Count = %d", delwaitcount);
         winx_sleep(250);
     }
     if (jp == NULL)
@@ -518,10 +518,10 @@ done:
     // without clearing the memory, deletion of lists will fail/break/segfault.
     // This has to be kept in mind in the terminator also, to reset variables.
     if (result > 0){
-        dtrace("Job Complete. Creating deletion Thread with 333ms timeout ->");
+        //dtrace("Job Complete. Creating deletion Thread with 333ms timeout ->");
         winx_create_thread(wait_delete_lists_thread,(LPVOID)&jp);
         while(!gui_finished || !wait_delete_thread_finished){
-            dtrace("Sleeping 333ms waiting for deletion to complete. Wait Count = %d", delwaitcount);            
+            //dtrace("Sleeping 333ms waiting for deletion to complete. Wait Count = %d", delwaitcount);            
             delwaitcount++;
             winx_sleep(333);
         }
@@ -712,7 +712,7 @@ int convert_path_to_native(wchar_t *path, wchar_t **native_path)
         etrace("Abnormal Error. Cannot build native path!");
         return 0;
     }
-    dtrace("Inside native conversion function: Path was: %ws",native_path);
+    //dtrace("Inside native conversion function: Path was: %ws",native_path);
     return 1;
 }
 

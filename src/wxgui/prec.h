@@ -104,6 +104,7 @@
 //Windows:
 #include <commctrl.h>
 #include <signal.h>
+//TaskBar Progress Flag.
 typedef enum {
     TBPF_NOPROGRESS = 0,
     TBPF_INDETERMINATE = 0x1,
@@ -141,7 +142,6 @@ HRESULT WINAPI URLDownloadToCacheFileW(
 }
 #endif
 
-#include "SimpleTransientPopupHeader.h"
 
 //Guicon.cpp
 void RedirectIOToConsole();

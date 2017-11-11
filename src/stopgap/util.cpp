@@ -48,10 +48,7 @@ namespace util
 int Title::buf::sync()
 {
   static const std::wstring prefix(L"StopGap — ");
-
-  auto s = prefix + str();
-  ::SetConsoleTitle(s.c_str());
-  str(L"");
+  ::SetConsoleTitle(prefix.c_str());
   return 0;
 }
 

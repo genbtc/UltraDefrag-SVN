@@ -47,7 +47,7 @@ typedef struct _udefrag_job_parameters {
     udefrag_options udo;                        /* job options */
     udefrag_progress_info pi;                   /* progress counters */
     winx_volume_information v_info;             /* basic volume information */
-    fs_type_enum fs_type;                   /* type of the file system */
+    fs_type_enum fs_type;                       /* type of the file system */
     int is_fat;                                 /* nonzero value indicates that the file system is a kind of FAT */
     int is_ntfs;                                /* quick indicate that it is NTFS: */
     winx_file_info *filelist;                   /* list of files */

@@ -127,6 +127,7 @@ static int get_volume_information(udefrag_job_parameters *jp)
     
     jp->fs_type = FS_UNKNOWN;
     jp->is_fat = 0;
+    jp->is_ntfs = 0;
     
     /* reset file lists */
     destroy_lists(jp);

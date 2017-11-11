@@ -105,7 +105,7 @@ void MainFrame::QueryClusters(wxCommandEvent& event){
     //set the Analysis Mode to SINGLE file mode.
     // This probably can't work for all queries, but is fast.
     wxSetEnv(L"UD_CUT_FILTER",filtertext);
-    m_queryThread->singlefile = TRUE;
+    m_queryThread->singlefile = true;
     m_queryThread->m_flags |= UD_JOB_CONTEXT_MENU_HANDLER;
 
     m_queryThread->m_querypath = itemtext;
@@ -156,10 +156,11 @@ void MainFrame::QueryOperation3(wxCommandEvent& event)
 int QueryThread::stopgap_finish_operation3()
 {
     dtrace("Query.cpp starts calling stopgap_enumerate_gaps()");
-    //char letter = 'C';
-    char letter = g_mainFrame->GetDriveLetter();
-    wxString GapsList(stopgap_enumerate_gaps(letter).c_str());
+    const char letter = g_mainFrame->GetDriveLetter();
+    const wxString GapsList(stopgap_enumerate_gaps(letter));
     g_mainFrame->m_WxTextCtrl1->AppendText(GapsList);
+    if (winx_init_library() < 0)
+        return (-1);
     return 1;
 }
 
@@ -167,11 +168,11 @@ int QueryThread::stopgap_finish_operation3()
 void MainFrame::QueryOperation4(wxCommandEvent& event)
 {
     dtrace("Query.cpp starts calling stopgap_count_gaps()");
-    //char letter = 'C';
-    char letter = g_mainFrame->GetDriveLetter();
+    const char letter = g_mainFrame->GetDriveLetter();
     wxString GapsList("There were this many gaps: ");
     GapsList << stopgap_count_gaps(letter) << " \n";
     g_mainFrame->m_WxTextCtrl1->AppendText(GapsList);
+    if (winx_init_library() < 0)
     return;
 }
 

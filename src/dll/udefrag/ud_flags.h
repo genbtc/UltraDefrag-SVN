@@ -23,6 +23,7 @@
 
 //COLORMAP:
 #define DEFAULT_COLOR DEFAULT_GRAY
+#define UNKNOWN_SPACE DEFAULT_GRAY
 
 /************************************************************/
 /*             Constants affecting performance              */
@@ -116,7 +117,7 @@
 #define is_not_essential_file(f)     ((f)->user_defined_flags & UD_FILE_NOT_ESSENTIAL_FILE)
 #define is_mft_file(f)               ((f)->user_defined_flags & UD_FILE_MFT_FILE)
 #define is_not_mft_file(f)           ((f)->user_defined_flags & UD_FILE_NOT_MFT_FILE)
-#define is_ntfs(f)                   ((file_system_type)f == FS_NTFS)
+#define is_ntfs(f)                   (f == FS_NTFS)
 
 #define is_block_excluded(b)         ((b)->length == 0)
 

@@ -389,7 +389,7 @@ void MainFrame::UpdateVolumeInformation(wxCommandEvent& event)
         }
     }
 
-    wxString msg(_("Disk needs to be repaired"));
+    const wxString msg(_("Disk needs to be repaired"));
     if(v->is_dirty){
         if(v->is_removable) m_vList->SetItemImage(index,g_removableDirtyIcon);
         else m_vList->SetItemImage(index,g_fixedDirtyIcon);
@@ -487,8 +487,8 @@ void MainFrame::UpdateVolumeStatus(wxCommandEvent& event)
     m_vList->SetItem(index,2,fragmentation);
 }
 
-//TODO: Ticking Show/Scan Removable Drives does an event on this function
-//  Dont create multiple added "Move File to Drive X" sub menus. 
+//TODO: Ticking Show/Scan Removable Drives fires an event on this function
+//  and creates multiple added "Move File to Drive X" sub menus
 void MainFrame::PopulateList(wxCommandEvent& event)
 {
     //should only happen once.
@@ -496,6 +496,7 @@ void MainFrame::PopulateList(wxCommandEvent& event)
     if(!v) return;
 
     m_vList->DeleteAllItems();
+    delete m_DriveSubMenu;
     m_DriveSubMenu = new wxMenu();  //make the submenu of fileslist popupmenu.
 
     for(int i = 0; v[i].letter; i++){

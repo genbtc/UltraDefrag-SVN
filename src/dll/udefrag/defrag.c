@@ -64,7 +64,7 @@ void test_move(winx_file_info *f,udefrag_job_parameters *jp)
         dtrace("move succeeded for %ws",f->path);
     }
     /* try to move the first cluster back */
-    if(can_move(f,jp)){
+    if(can_move(f,jp->is_fat)){
         if(move_file(f,f->disp.blockmap->vcn,1,source_lcn,jp) < 0){
             etrace("move failed for %ws",f->path);
             return;
@@ -90,7 +90,7 @@ void test_special_files_defrag(udefrag_job_parameters *jp)
     dtrace("test of special files defragmentation started");
 
     for(f = jp->filelist; f; f = f->next){
-        if(can_move(f,jp)){
+        if(can_move(f,jp->is_fat)){
             special_file = 0;
             if(is_reparse_point(f)){
                 dtrace("reparse point detected: %ws",f->path);

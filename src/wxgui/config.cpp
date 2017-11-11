@@ -55,8 +55,8 @@ wxString wxGetCurrentWorkingDirectory()
     return path.GetFullPath();
 }
 //reference these variables instead of magic-strings all over the source-files.
-wxString OPTIONSDIR = wxGetCurrentWorkingDirectory() << "\\conf\\";
-wxString OPTIONSFILE = OPTIONSDIR << "options.lua";
+wxString OPTIONSDIR = wxGetCurrentWorkingDirectory() + "\\conf\\";
+wxString OPTIONSFILE = OPTIONSDIR + "options.lua";
 //options file should be in its own directory because of the change-tracker
 //change-tracker should not care about anything else being modified.
 
@@ -208,7 +208,7 @@ void MainFrame::ReadUserPreferences(wxCommandEvent& WXUNUSED(event))
     wxUnsetEnv(wxT("UD_TIME_LIMIT"));
 
     /* interpret options.lua file */
-    lua_State *L; int status; wxString error = wxT("");
+    lua_State *L; int status; wxString error;
     wxFileName path(OPTIONSFILE);
     path.Normalize();
     if(!path.FileExists()){
@@ -300,17 +300,17 @@ void *ConfigThread::Entry()
 {
     ULONGLONG counter = 0;
 
-    itrace("configuration tracking started");
+    itrace("configuration dir tracking started");
 
-    HANDLE h = FindFirstChangeNotification(OPTIONSDIR.wc_str(),
+    HANDLE h = FindFirstChangeNotificationW(OPTIONSDIR.wc_str(),
         FALSE,FILE_NOTIFY_CHANGE_LAST_WRITE);
     if(h == INVALID_HANDLE_VALUE){
         letrace("FindFirstChangeNotification failed");
         goto done;
     }
 
-    while(!g_mainFrame->CheckForTermination(10)){
-        DWORD status = WaitForSingleObject(h,100);
+    while(!g_mainFrame->CheckForTermination(100)){
+        const DWORD status = WaitForSingleObject(h,100);
         if(status == WAIT_OBJECT_0){
             if(!(counter % 2)){
                 /*
@@ -329,7 +329,7 @@ void *ConfigThread::Entry()
                 * when the program modifies the file itself.
                 */
             } else {
-                itrace("configuration has been changed");
+                itrace("configuration dir has been changed");
                 QueueCommandEvent(g_mainFrame,ID_ReadUserPreferences);
                 QueueCommandEvent(g_mainFrame,ID_SetWindowTitle);
                 QueueCommandEvent(g_mainFrame,ID_AdjustSystemTrayIcon);
@@ -348,7 +348,7 @@ void *ConfigThread::Entry()
     FindCloseChangeNotification(h);
 
 done:
-    itrace("configuration tracking stopped");
+    itrace("configuration dir tracking stopped");
     return nullptr;
 }
 
@@ -370,7 +370,7 @@ void MainFrame::OnBootScript(wxCommandEvent& WXUNUSED(event))
     script.Normalize(); Utils::ShellExec(script.GetFullPath(),wxT("edit"));
 }
 
-void MainFrame::ChooseFontDialog(wxCommandEvent& event)
+void MainFrame::ChooseFontDialog(wxCommandEvent& WXUNUSED(event))
 {
     wxFontDialog* dialog = new wxFontDialog(this);
     if (dialog->ShowModal() == wxID_OK) {

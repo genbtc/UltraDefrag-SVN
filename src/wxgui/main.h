@@ -355,12 +355,12 @@ public:
     RefreshDrivesInfoThread() : wxThread(wxTHREAD_JOINABLE) { Create(); Run(); }
     ~RefreshDrivesInfoThread() { Wait(); }
 
-    virtual void *Entry();
+    void *Entry() override;
 };
 
 class RecoveryConsole : public wxProcess {
 public:
-    virtual void OnTerminate(int pid, int status);
+    void OnTerminate(int pid, int status) override;
 };
 
 //genBTC query.cpp Query Thread.
@@ -556,7 +556,14 @@ struct cmapreturn
     int lines;
 };
 
-class LegendTransientPopup;
+class LegendTransientPopup : public wxPopupTransientWindow
+{
+public:
+    explicit LegendTransientPopup(wxWindow* parent);
+    wxWindow* m_owner;  //PARENT
+    wxWindow* m_window;
+};
+
 class ClusterMap: public wxWindow {
 public:
     explicit ClusterMap(wxWindow* parent);
@@ -564,14 +571,14 @@ public:
 
     void OnEraseBackground(wxEraseEvent& event);
     void OnPaint(wxPaintEvent& event);
-    ULONGLONG getLCNsfromMousePos(const wxPoint& pos);
-    void ClusterMapLegend(wxMouseEvent& event);
-    void DrawSingleRectangleBorder(HDC m_cacheDC2, int xblock, int yblock, int line_width, int cell_size, HBRUSH brush,
+    ULONGLONG getLCNsfromMousePos(const wxPoint& pos) const;
+    void ClusterMapGetLCN(wxMouseEvent& event);
+    static void DrawSingleRectangleBorder(HDC m_cacheDC2, int xblock, int yblock, int line_width, int cell_size, HBRUSH brush,
         HBRUSH infill);
     ClusterMap *m_ClusterMap;
 private:
-    char *ScaleMap(int scaled_size);
-    void GetGridSizeforCMap(cmapreturn* gridsize);    
+    static char *ScaleMap(int scaled_size);
+    void GetGridSizeforCMap(cmapreturn* gridsize) const;    
     int m_width;
     int m_height;
     HDC m_cacheDC;
@@ -589,10 +596,13 @@ typedef struct _JobsCacheEntry {
     bool stopped;
 } JobsCacheEntry;
 
-//unordered map. (STD in this case)
+//STDLib unordered map.
 WX_DECLARE_HASH_MAP(int, JobsCacheEntry*, \
     wxIntegerHash, wxIntegerEqual, JobsCache);;
 
+// =======================================================================
+//                          Main Frame
+// =======================================================================
 
 class MainFrame: public wxFrame {
 public:
@@ -682,7 +692,7 @@ public:
     void QueryOperation3(wxCommandEvent& event);   //genBTC query.cpp Op3.
 
     // common routines
-    int  CheckOption(const wxString& name);
+    static int  CheckOption(const wxString& name);
     void SetTaskbarProgressState(TBPFLAG flag);
     void SetTaskbarProgressValue(ULONGLONG completed, ULONGLONG total);
 
@@ -824,5 +834,6 @@ extern double g_scaleFactor;
 extern int g_iconSize;
 extern HANDLE g_synchEvent;
 extern bool g_refreshDrivesInfo;
-
+extern const wchar_t* g_colornames[SPACE_STATES];   //genbtc
+extern COLORREF g_colors[SPACE_STATES];             //genbtc
 #endif /* _UDEFRAG_GUI_MAIN_H_ */

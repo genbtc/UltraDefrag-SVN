@@ -1,6 +1,7 @@
 /* Any copyright is dedicated to the Public Domain.
    http://creativecommons.org/publicdomain/zero/1.0/ */
 /* Written by Nils Maier in 2014. */
+/* Modified to work with UltraDefrag by genBTC in 2017*/
 #include "prec.h"
 
 void __cdecl progress(winx_file_info *f, uint64_t *count)
@@ -105,7 +106,6 @@ void move_file(
 }
 void stopgap_move_file(Options opts,winx_file_info *f, const winx_volume_region *g)
 {
-    //zen::winx zw;
     Operation op;
     op.init();
     move_file(op, f, g);
@@ -151,7 +151,6 @@ bool move_set(
 
 void stopgap_move_set(winx_volume_region &r)
 {
-    //zen::winx zw;
     Operation op;
     Options opts;
     opts.Reset();
@@ -212,7 +211,6 @@ void defrag(Operation &op)
 }
 void stopgap_defrag(char driveLetter)
 {
-    //zen::winx zw;
     Operation op;
     op.init();
     op.opts.volume = driveLetter;
@@ -262,7 +260,6 @@ bool widen_behind(Operation &op, const winx_volume_region *g, size_t maxMoves)
 }
 void stopgap_widen_behind(const winx_volume_region *g, size_t maxMoves)
 {
-    //zen::winx zw;
     Operation op;
     op.init();
     widen_behind(op, g, maxMoves);
@@ -310,7 +307,6 @@ void close_gaps(Operation &op)
 }
 void stopgap_close_gaps(char driveLetter)
 {
-    //zen::winx zw;
     Operation op;
     op.opts.volume = driveLetter;
     op.init();
@@ -319,7 +315,6 @@ void stopgap_close_gaps(char driveLetter)
 
 size_t stopgap_count_gaps(char driveLetter)
 {
-    //zen::winx zw;
     Operation op;
     op.opts.volume = driveLetter;
     op.init();
@@ -329,7 +324,6 @@ size_t stopgap_count_gaps(char driveLetter)
 std::wstring stopgap_enumerate_gaps(char driveLetter)
 {
     //RedirectIOToConsole();
-    //zen::winx zw;
     Operation op;
     op.opts.volume = driveLetter;
     op.vol.init(op.opts.volume);

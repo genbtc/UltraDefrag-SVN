@@ -317,8 +317,7 @@ static wchar_t * get_default_attribute_name(ATTRIBUTE_TYPE attr_type)
 static wchar_t * get_attribute_name(ATTRIBUTE *attr,mft_scan_parameters *sp)
 {
     ATTRIBUTE_TYPE attr_type;
-    wchar_t *default_attr_name = NULL;
-    wchar_t *attr_name;
+    wchar_t *attr_name, *default_attr_name ;
 
     /* get the default name of the attribute */
     attr_type = attr->AttributeType;

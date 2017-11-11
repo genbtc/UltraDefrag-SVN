@@ -47,6 +47,55 @@
 #pragma comment(lib, "gdi32")
 
 // =======================================================================
+//                            Definitions
+// =======================================================================
+
+//color enums are also listed in ud_structs.h line 172
+const wchar_t* g_colornames[SPACE_STATES] = {
+    L"DEFAULT_GRAY",
+    L"UNUSED_MAP_SPACE",          /* other colors have more precedence */
+    L"FREE_SPACE",                /* has lowest precedence */
+    L"SYSTEM_SPACE",
+    L"SYSTEM_OVER_LIMIT_SPACE",
+    L"FRAGM_SPACE",
+    L"FRAGM_OVER_LIMIT_SPACE",
+    L"UNFRAGM_SPACE",
+    L"UNFRAGM_OVER_LIMIT_SPACE",
+    L"DIR_SPACE",
+    L"DIR_OVER_LIMIT_SPACE",
+    L"COMPRESSED_SPACE",
+    L"COMPRESSED_OVER_LIMIT_SPACE",
+    L"MFT_ZONE_SPACE",
+    L"MFT_SPACE",                 /* has highest precedence */
+    L"IN_MOVE_PROGRESS_SPACE",
+    L"TEAL_BLUE_GREEN",
+    L"SUPER_OBNOXIOUS_GREEN"
+};
+
+//old colors were listed in udefrag.h line 98
+COLORREF g_colors[SPACE_STATES] =
+{
+    RGB(165,165,165), /* 0= DEFAULT_GRAY */
+    RGB(0,0,0),       /* 1= unused map block  */ //genBTC change from grey to black.
+    RGB(255,255,255), /* 2= free */
+    RGB(201,131,231), /* 3= SYSTEM_SPACE */ //genBTC change from green to purple-ish(like MFT#12-ish)    
+    RGB(224,180,240), /* 4=   ""  OVER_LIMIT_SPACE */ //genBTC change from green to purple-ish(like MFT#13-ish)
+    RGB(255,0,0),   /* 5= fragmented */
+    RGB(192,0,0),   /* 6=   ""  OVER_LIMIT_SPACE */ //genBTC change Frag_over_limit from 128 to 192.
+    RGB(0,0,255),   /* 7= unfragmented */
+    RGB(0,0,128),   /* 8=   ""  OVER_LIMIT_SPACE */
+    RGB(255,255,0), /* 9= directories */
+    RGB(238,221,0), /*10=   ""  OVER_LIMIT_SPACE */
+    RGB(185,185,0), /*11= compressed */
+    RGB(93,93,0),   /*12=   ""  OVER_LIMIT_SPACE */
+    RGB(128,0,255), /*13= mft zone */
+    RGB(211,0,255), /*14= mft itself */ //genBTC (REVERSED COLORS)
+    RGB(0,192,0),   /*15= IN_MOVE_PROGRESS_SPACE */
+    RGB(0,230,255), /*16= TEAL_BLUE_GREEN */
+    RGB(102,255,0)  /*17= SUPER_OBNOXIOUS_GREEN */
+};
+
+// =======================================================================
 //                            Cluster map
 // =======================================================================
 
@@ -86,7 +135,7 @@ ClusterMap::~ClusterMap()
 BEGIN_EVENT_TABLE(ClusterMap, wxWindow)
     EVT_ERASE_BACKGROUND(ClusterMap::OnEraseBackground)
     EVT_PAINT(ClusterMap::OnPaint)
-    EVT_RIGHT_DOWN(ClusterMap::ClusterMapLegend)
+    EVT_RIGHT_DOWN(ClusterMap::ClusterMapGetLCN)
 END_EVENT_TABLE();
 
 void ClusterMap::OnEraseBackground(wxEraseEvent& event)
@@ -267,17 +316,17 @@ draw:
 */
 int MainFrame::GetMapSize() {
     int width, height; g_mainFrame->m_cMap->GetClientSize(&width, &height);
-    int block_size = CheckOption("UD_MAP_BLOCK_SIZE");
-    int line_width = CheckOption("UD_GRID_LINE_WIDTH");
-    int cell_size = block_size + line_width;
-    int blocks_per_line = (width - line_width) / cell_size;
-    int lines = (height - line_width) / cell_size;
+    const int block_size = CheckOption("UD_MAP_BLOCK_SIZE");
+    const int line_width = CheckOption("UD_GRID_LINE_WIDTH");
+    const int cell_size = block_size + line_width;
+    const int blocks_per_line = (width - line_width) / cell_size;
+    const int lines = (height - line_width) / cell_size;
     return (blocks_per_line * lines);
 }
 
 // =======================================================================
 // duplicated the above by accident. didnt see it (was in Job.cpp)
-void ClusterMap::GetGridSizeforCMap(cmapreturn *gs)
+void ClusterMap::GetGridSizeforCMap(cmapreturn *gs) const
 {
     GetClientSize(&gs->width, &gs->height);
     gs->block_size = g_mainFrame->CheckOption(wxT("UD_MAP_BLOCK_SIZE"));
@@ -288,20 +337,29 @@ void ClusterMap::GetGridSizeforCMap(cmapreturn *gs)
     gs->lines = gs->cell_size ? (gs->height - gs->line_width) / gs->cell_size : 0;
 }
 
+void ClusterMap::ClusterMapGetLCN(wxMouseEvent& WXUNUSED(event))
+{
+    int a, b;
+    GetScreenPosition(&a, &b);
+    wxPoint const mousePos = wxGetMousePosition();
+    wxPoint relPos;
+    relPos.x = mousePos.x - a;
+    relPos.y = mousePos.y - b;
+    auto ActualLCN = getLCNsfromMousePos(relPos);
+    if (ActualLCN)
+        dtrace("Actual LCN was %I64u", ActualLCN);
+}
 
-ULONGLONG ClusterMap::getLCNsfromMousePos(const wxPoint& pos)
+ULONGLONG ClusterMap::getLCNsfromMousePos(const wxPoint& pos) const
 {
     cmapreturn *gs = new cmapreturn();
     GetGridSizeforCMap(gs);
 
-    double const x = pos.x;
-    double const y = pos.y;
-
     //get current cell in full cell integers.
-    int currentRow = ceil(y / gs->cell_size);
-    int currentCol = ceil(x / gs->cell_size);
+    const int currentRow = ceil(pos.y / (double)gs->cell_size);
+    const int currentCol = ceil(pos.x / (double)gs->cell_size);
     //infer the X/Y matrix into a single cell.
-    int rowsused = gs->blocks_per_line * (currentRow-1);
+    const int rowsused = gs->blocks_per_line * (currentRow-1);
     int ActualCell = rowsused + currentCol;
     dtrace("Actual cell was %i", ActualCell);
     LONGLONG total_space;
@@ -309,7 +367,7 @@ ULONGLONG ClusterMap::getLCNsfromMousePos(const wxPoint& pos)
     ULONGLONG clusters;
     int cmapCells;
     double LCNperCell;
-    //We Cant do any of this if Map has not been generated by analysis yet...
+    //TODO: We Cant do any of this if Map has not been generated by analysis yet...
     JobsCacheEntry *currentJob;
     currentJob = g_mainFrame->m_currentJob;
     if (currentJob) {
@@ -323,6 +381,7 @@ ULONGLONG ClusterMap::getLCNsfromMousePos(const wxPoint& pos)
             
             //These should be equal. Make sure nothing weird happens while I debug this.
             assert(scaled_size == cmapCells);
+            delete gs;
             return (LCNperCell * ActualCell);
         }
     }
@@ -333,8 +392,8 @@ ULONGLONG ClusterMap::getLCNsfromMousePos(const wxPoint& pos)
 void ClusterMap::DrawSingleRectangleBorder(HDC m_cacheDC2, int xblock, int yblock, 
     int line_width, int cell_size, HBRUSH brush, HBRUSH infill)
 {
-    int x = xblock * cell_size;
-    int y = yblock * cell_size;
+    const int x = xblock * cell_size;
+    const int y = yblock * cell_size;
     int w, r;
     w = r = line_width;
     for (int q = 0; q <= 1; q++, r--)

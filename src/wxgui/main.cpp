@@ -310,6 +310,7 @@ MainFrame::MainFrame()
     m_busy = false;
     m_paused = false;
     m_legendPopup = NULL;
+    m_DriveSubMenu = NULL;
 
     // set main window icon
     wxIconBundle icons;
@@ -707,7 +708,7 @@ void MainFrame::OnHelpLegend(wxCommandEvent& WXUNUSED(event))
 {
     //Utils::OpenHandbook(wxT("GUI.html"),wxT("cluster_map_legend"));
 
-    //Cluster Map Legend.
+    //Cluster Map Legend:
     delete m_legendPopup;
     m_legendPopup = new LegendTransientPopup(this);
     wxPoint pos = wxGetMousePosition();

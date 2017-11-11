@@ -114,12 +114,11 @@ void FilesList::SortVirtualItems(int Column)
     }
     this->Thaw();
     m_sortinfo.Column = Column; // set the last-clicked column 
-//    for (std::vector<FilesListItem>::iterator it=allitems.begin(); it!=allitems.end(); ++it){
 }
 
 void FilesList::OnColClick(wxListEvent& event)
 {
-    int col = event.GetColumn();
+    const int col = event.GetColumn();
     //cant sort col 3 or 4.
     if (col == 3 || col == 4)
         return;
@@ -284,13 +283,14 @@ void FilesList::RClickSubMenuMoveFiletoDriveX(wxCommandEvent& event)
     const int result = can_move(&checkMove, FS_NTFS);
     if (result)
         MoveFile(srcfilename,dstfilename);
+    //TODO: maybe Zenwinx native move_file is better instead or something?
 //    dtrace("srcfilename was %ws",srcfilename);
 //    dtrace("dstfilename was %ws",dstfilename);
 //    dtrace("dst path was %ws",dstpath);
     delete srcfilename;    delete dstfilename;    delete dstpath;
 
     RemoveSingleFileAt(); //remove from the listview.
-    g_mainFrame->m_jobThread->singlefile = FALSE;
+    g_mainFrame->m_jobThread->singlefile = false;
     wxUnsetEnv(L"UD_CUT_FILTER");
     dtrace("The Move Has Completed Fully."); //Final Complete Message.
 }
@@ -312,7 +312,7 @@ void FilesList::GetFilesAndMakeFilterLists()
         i = GetNextSelected(i);
     }
     wxSetEnv(L"UD_CUT_FILTER",filtertext);
-    g_mainFrame->m_jobThread->singlefile = TRUE;
+    g_mainFrame->m_jobThread->singlefile = true;
 }
 
 //event function to call the right job event 
@@ -342,7 +342,7 @@ void FilesList::RClickDefragMoveSingle(wxCommandEvent& event)
 
 void FilesList::RClickCopyClipboard(wxCommandEvent& event)
 {
-    wxString itemtext = GetListItem().GetText();
+    const wxString itemtext = GetListItem().GetText();
     if (wxTheClipboard->Open()){
         wxTheClipboard->SetData( new wxTextDataObject(itemtext) );
         wxTheClipboard->Close();
@@ -450,12 +450,7 @@ void MainFrame::FilesPopulateList(wxCommandEvent& event)
     winx_file_info *file;
     int currentitem = 0;
     bool something_removed = false;
-	/*
-    if(!&m_jobsCache){
-      etrace("FAILED to obtain currentJob CacheEntry!!");
-      return;
-    }*/
-    //JobsCacheEntry *newEntry = (JobsCacheEntry *)event.GetClientData();
+    //TODO: might wanna check if we actually have a valid jobs cache entry
     char letter = (char)event.GetInt();
     JobsCacheEntry cacheEntry = *m_jobsCache[(int)letter];
 
@@ -550,9 +545,10 @@ wxString FilesList::OnGetItemText(long item, long column) const
         case 3:
         case 4:
         case 5:
-        default:
             return allitems[item].ReturnColumn(column);
+        default:
             wxFAIL_MSG("Invalid column index in FilesList::OnGetItemText");
     }
+    return "";
 }
 /** @} */

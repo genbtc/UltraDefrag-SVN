@@ -357,3 +357,5 @@ vc120.idb
 vc140.idb
 vc141.idb
 /src/wxgui/reports.lng
+.vs*
+/src/.vs*

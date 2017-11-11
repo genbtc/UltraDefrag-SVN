@@ -118,7 +118,7 @@ void JobThread::ProgressCallback(udefrag_progress_info *pi, void *p)
     }
 
     // save progress information to the jobs cache
-    int letter = (int)(g_mainFrame->m_jobThread->m_letter);
+    const int letter = (int)(g_mainFrame->m_jobThread->m_letter);
     JobsCacheEntry *cacheEntry = new JobsCacheEntry;
     cacheEntry->jobType = g_mainFrame->m_jobThread->m_jobType;
     memcpy(&cacheEntry->pi,pi,sizeof(udefrag_progress_info));
@@ -136,7 +136,6 @@ void JobThread::ProgressCallback(udefrag_progress_info *pi, void *p)
 
 	if (pi->completion_status > 0) {
 		pi->isfragfileslist = TRUE;
-		//g_jpPtr = pi->jp;   //set Global Pointer back to &jp->
 		cacheEntry->pi.fragmented_files_prb = pi->fragmented_files_prb;
 
 		//populate the fragmented-files-list tab's listview.
@@ -146,6 +145,7 @@ void JobThread::ProgressCallback(udefrag_progress_info *pi, void *p)
         dtrace("Successfully sent Fragmented Files list over to MainFrame::FilesPopulateList()");
 		//updates status column with "Analyzed.", etc (on finished)
         event = new wxCommandEvent(wxEVT_COMMAND_MENU_SELECTED,ID_UpdateVolumeStatus);
+        //event->SetInt(NULL);
 		g_mainFrame->GetEventHandler()->QueueEvent(event);
         return; //shortcut past a redundant redrawmap and updatestatusbar
     }
@@ -303,12 +303,6 @@ void MainFrame::OnStartJob(wxCommandEvent& event)
         wxSetEnv(wxT("UD_SORTING_ORDER"),wxT("asc"));
     } else {
         wxSetEnv("UD_SORTING_ORDER","desc");
-    }
-
-    //handle single file defragmenting launched from the right click context menu
-    // as if it was launched from the explorer shell context menu handler.
-    if (m_jobThread->singlefile){
-        m_jobThread->m_flags |= UD_JOB_CONTEXT_MENU_HANDLER;
     }
 
     //handle single file defragmenting launched from the right click context menu
@@ -489,10 +483,11 @@ void MainFrame::OnRepair(wxCommandEvent& WXUNUSED(event))
 
 void MainFrame::OnDefaultAction(wxCommandEvent& WXUNUSED(event))
 {
-    long i = m_vList->GetFirstSelected();
-    if(i != -1){
+    const long i = m_vList->GetFirstSelected();
+    if (i == -1) return;
+    {
         volume_info v;
-        char letter = (char)m_vList->GetLetter(i);
+        const char letter = (char)m_vList->GetLetter(i);
         if(udefrag_get_volume_information(letter,&v) >= 0){
             if(v.is_dirty){
                 ProcessCommandEvent(this,ID_Repair);
@@ -531,7 +526,7 @@ void MainFrame::OnDiskProcessingFailure(wxCommandEvent& event)
         break;
     }
 
-    int error = event.GetInt();
+    const int error = event.GetInt();
     wxString msg = caption + wxT("\n") \
         + wxString::Format(wxT("%hs"),
         udefrag_get_error_description(error));

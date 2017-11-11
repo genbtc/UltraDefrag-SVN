@@ -27,28 +27,27 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>Windows7.1SDK</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>Windows7.1SDK</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>Windows7.1SDK</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>Windows7.1SDK</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup>
@@ -70,33 +69,23 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PreprocessorDefinitions>_NO_CRT_STDIO_INLINE;NDEBUG;BUILD_DLL;WIN32;_MBCS;USE_WINSDK;_CRT_SECURE_NO_WARNINGS;OFFICIAL_RELEASE;ATTACH_DEBUGGER;_CONSOLE;_USRDLL;UDEFRAG_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <CompileAs>Default</CompileAs>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <TreatWChar_tAsBuiltInType />
       <ForceConformanceInForLoopScope />
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
       <StringPooling>true</StringPooling>
       <MinimalRebuild>true</MinimalRebuild>
-      <CompileAsManaged>false</CompileAsManaged>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Native</SubSystem>
       <EntryPointSymbol>DllMain</EntryPointSymbol>
       <ShowProgress>LinkVerboseLib</ShowProgress>
       <SetChecksum>
       </SetChecksum>
-      <MapExports>
-      </MapExports>
       <ModuleDefinitionFile>udefrag.def</ModuleDefinitionFile>
       <ManifestFile>
       </ManifestFile>
@@ -108,27 +97,23 @@
       </UACExecutionLevel>
       <UACUIAccess>
       </UACUIAccess>
-      <ProgramDatabaseFile>
-      </ProgramDatabaseFile>
       <RandomizedBaseAddress />
       <DataExecutionPrevention />
       <TypeLibraryResourceID />
-      <GenerateMapFile />
       <ForceSymbolReferences>
       </ForceSymbolReferences>
+      <ImageHasSafeExceptionHandlers />
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
-      <ImageHasSafeExceptionHandlers />
     </Link>
     <Lib>
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
-      <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Native</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Configuration);(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
       <Name>
       </Name>
-      <ModuleDefinitionFile>$(SolutionDir)zenwinx\zenwinx.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>udefrag.def</ModuleDefinitionFile>
     </Lib>
     <ProjectReference />
     <ResourceCompile />
@@ -142,12 +127,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PreprocessorDefinitions>_NO_CRT_STDIO_INLINE;NDEBUG;BUILD_DLL;WIN32;_MBCS;USE_WINSDK;_CRT_SECURE_NO_WARNINGS;OFFICIAL_RELEASE;ATTACH_DEBUGGER;_CONSOLE;_USRDLL;UDEFRAG_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <CompileAs>Default</CompileAs>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <TreatWChar_tAsBuiltInType>
       </TreatWChar_tAsBuiltInType>
@@ -157,21 +139,16 @@
       </PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>
       </PrecompiledHeaderOutputFile>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
       <StringPooling>true</StringPooling>
       <MinimalRebuild>true</MinimalRebuild>
-      <CompileAsManaged>false</CompileAsManaged>
+      <OmitFramePointers>false</OmitFramePointers>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Native</SubSystem>
       <EntryPointSymbol>DllMain</EntryPointSymbol>
       <ShowProgress>LinkVerboseLib</ShowProgress>
       <SetChecksum>
       </SetChecksum>
-      <MapExports>
-      </MapExports>
       <ModuleDefinitionFile>udefrag.def</ModuleDefinitionFile>
       <ManifestFile>
       </ManifestFile>
@@ -183,16 +160,12 @@
       </UACExecutionLevel>
       <UACUIAccess>
       </UACUIAccess>
-      <ProgramDatabaseFile>
-      </ProgramDatabaseFile>
       <RandomizedBaseAddress>
       </RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TypeLibraryResourceID>
       </TypeLibraryResourceID>
-      <GenerateMapFile>
-      </GenerateMapFile>
       <ForceSymbolReferences>
       </ForceSymbolReferences>
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
@@ -200,13 +173,12 @@
     </Link>
     <Lib>
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
-      <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Native</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Configuration);(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
       <Name>
       </Name>
-      <ModuleDefinitionFile>$(SolutionDir)zenwinx\zenwinx.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>udefrag.def</ModuleDefinitionFile>
     </Lib>
     <ProjectReference />
     <ResourceCompile />
@@ -220,22 +192,16 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <MinimalRebuild>true</MinimalRebuild>
       <PreprocessorDefinitions>_NO_CRT_STDIO_INLINE;_DEBUG;DEBUG;BUILD_DLL;_WIN32;WIN32;_MBCS;USE_WINSDK;_CRT_SECURE_NO_WARNINGS;ATTACH_DEBUGGER;_CONSOLE;_USRDLL;UDEFRAG_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <CompileAs>Default</CompileAs>
-      <AdditionalOptions>/d2noftol3</AdditionalOptions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <TreatWChar_tAsBuiltInType />
       <ForceConformanceInForLoopScope />
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>true</StringPooling>
-      <CompileAsManaged>false</CompileAsManaged>
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>udefrag.def</ModuleDefinitionFile>
@@ -244,13 +210,12 @@
       <EnableUAC />
       <UACExecutionLevel />
       <UACUIAccess />
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Native</SubSystem>
       <EntryPointSymbol>DllMain</EntryPointSymbol>
       <RandomizedBaseAddress />
       <DataExecutionPrevention />
       <TypeLibraryResourceID />
       <SetChecksum />
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
       <ShowProgress>LinkVerboseLib</ShowProgress>
       <ForceSymbolReferences>
       </ForceSymbolReferences>
@@ -264,18 +229,18 @@
     <ResourceCompile>
       <PreprocessorDefinitions>_UNICODE;UNICODE;DEBUG%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
+    <Lib>
+      <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
+      <ModuleDefinitionFile>udefrag.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Configuration);(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <MinimalRebuild>true</MinimalRebuild>
       <PreprocessorDefinitions>_NO_CRT_STDIO_INLINE;_DEBUG;DEBUG;BUILD_DLL;_WIN32;WIN32;_MBCS;USE_WINSDK;_CRT_SECURE_NO_WARNINGS;ATTACH_DEBUGGER;_CONSOLE;_USRDLL;UDEFRAG_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <CompileAs>Default</CompileAs>
-      <AdditionalOptions>
-      </AdditionalOptions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <TreatWChar_tAsBuiltInType>
       </TreatWChar_tAsBuiltInType>
@@ -287,7 +252,7 @@
       </PrecompiledHeaderOutputFile>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>true</StringPooling>
-      <CompileAsManaged>false</CompileAsManaged>
+      <OmitFramePointers>false</OmitFramePointers>
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>udefrag.def</ModuleDefinitionFile>
@@ -301,7 +266,7 @@
       </UACExecutionLevel>
       <UACUIAccess>
       </UACUIAccess>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Native</SubSystem>
       <EntryPointSymbol>DllMain</EntryPointSymbol>
       <RandomizedBaseAddress>
       </RandomizedBaseAddress>
@@ -311,7 +276,6 @@
       </TypeLibraryResourceID>
       <SetChecksum>
       </SetChecksum>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
       <ShowProgress>LinkVerboseLib</ShowProgress>
       <ForceSymbolReferences>
       </ForceSymbolReferences>
@@ -325,6 +289,11 @@
     <ResourceCompile>
       <PreprocessorDefinitions>_UNICODE;UNICODE;DEBUG%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
+    <Lib>
+      <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
+      <ModuleDefinitionFile>udefrag.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Configuration);(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="analyze.c" />

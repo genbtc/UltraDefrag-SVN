@@ -1,3 +1,4 @@
+#pragma once
 /*
 *  UltraDefrag - a powerful defragmentation tool for Windows NT.
 *  Copyright (c) 2007-2017 Dmitri Arkhangelski (dmitriar@gmail.com).
@@ -101,23 +102,6 @@ typedef struct {
     int is_ntfs;
 } fs_type_struct;
 
-inline int is_fstype_FAT(fs_type_enum fstype)
-{
-    switch (fstype) {
-    case(FS_FAT12):
-    case(FS_FAT16):
-    case(FS_FAT32):
-    case(FS_EXFAT):
-        return TRUE;
-    default:
-        break;
-    }
-    return FALSE;
-}
-inline int is_fstype_NTFS(fs_type_enum fstype)
-{
-    return (fstype == FS_NTFS) ? TRUE : FALSE;
-}
 /*
 * More info at http://www.thescripts.com/forum/thread617704.html
 * ('Dynamically-allocated Multi-dimensional Arrays - C').
@@ -189,71 +173,6 @@ typedef enum {
     SUPER_OBNOXIOUS_GREEN,
     SPACE_STATES /* this must always be the last */
 } g_enum_SPACE_STATES;
-#define UNKNOWN_SPACE DEFAULT_GRAY
-
-static const wchar_t* g_colornames[SPACE_STATES] = {
-    L"DEFAULT_GRAY",
-    L"UNUSED_MAP_SPACE",          /* other colors have more precedence */
-    L"FREE_SPACE",                /* has lowest precedence */
-    L"SYSTEM_SPACE",
-    L"SYSTEM_OVER_LIMIT_SPACE",
-    L"FRAGM_SPACE",
-    L"FRAGM_OVER_LIMIT_SPACE",
-    L"UNFRAGM_SPACE",
-    L"UNFRAGM_OVER_LIMIT_SPACE",
-    L"DIR_SPACE",
-    L"DIR_OVER_LIMIT_SPACE",
-    L"COMPRESSED_SPACE",
-    L"COMPRESSED_OVER_LIMIT_SPACE",
-    L"MFT_ZONE_SPACE",
-    L"MFT_SPACE",                 /* has highest precedence */
-    L"IN_MOVE_PROGRESS_SPACE",
-    L"TEAL_BLUE_GREEN",
-    L"SUPER_OBNOXIOUS_GREEN"
-};
-
-//colors are listed in udefrag.h line 98
-static COLORREF g_colors[SPACE_STATES] =
-{
-    RGB(165,165,165), /* 0= DEFAULT_GRAY */
-    RGB(0,0,0),       /* 1= unused map block  */ //genBTC change from grey to black.
-    RGB(255,255,255), /* 2= free */
-    RGB(201,131,231), /* 3= SYSTEM_SPACE */ //genBTC change from green to purple-ish(like MFT#12-ish)    
-    RGB(224,180,240), /* 4=   ""  OVER_LIMIT_SPACE */ //genBTC change from green to purple-ish(like MFT#13-ish)
-    RGB(255,0,0),   /* 5= fragmented */
-    RGB(192,0,0),   /* 6=   ""  OVER_LIMIT_SPACE */ //genBTC change Frag_over_limit from 128 to 192.
-    RGB(0,0,255),   /* 7= unfragmented */
-    RGB(0,0,128),   /* 8=   ""  OVER_LIMIT_SPACE */
-    RGB(255,255,0), /* 9= directories */
-    RGB(238,221,0), /*10=   ""  OVER_LIMIT_SPACE */
-    RGB(185,185,0), /*11= compressed */
-    RGB(93,93,0),   /*12=   ""  OVER_LIMIT_SPACE */
-    RGB(128,0,255), /*13= mft zone */
-    RGB(211,0,255), /*14= mft itself */ //genBTC (REVERSED COLORS)
-    RGB(0,192,0),   /*15= IN_MOVE_PROGRESS_SPACE */
-    RGB(0,230,255), /*16= TEAL_BLUE_GREEN */
-    RGB(102,255,0)  /*17= SUPER_OBNOXIOUS_GREEN */
-};
-
-typedef struct {
-    g_enum_SPACE_STATES state;
-    COLORREF rgb;
-    int index;
-    wchar_t* name;
-} gcolor_combo;
-
-inline void fillspacestates(gcolor_combo input)
-{
-    g_enum_SPACE_STATES state = (g_enum_SPACE_STATES)0;
-    gcolor_combo item;
-    for (int i = 0; i<sizeof(state); i++)
-    {
-        item.index = i;
-        item.rgb = input.rgb;
-        item.name = input.name;
-    }
-}
-
 
 #if defined(__cplusplus)
 }

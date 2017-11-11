@@ -26,6 +26,20 @@
 
 #include "udefrag-internals.h"
 
+int is_fstype_FAT(fs_type_enum fstype)
+{
+    switch (fstype) {
+    case FS_FAT12:
+    case FS_FAT16:
+    case FS_FAT32:
+    case FS_EXFAT:
+        return TRUE;
+    default:
+        break;
+    }
+    return FALSE;
+}
+
 /**
  * @internal
  * @brief Actualizes the list of free space regions.

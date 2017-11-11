@@ -190,7 +190,7 @@ void MainFrame::OnLocaleChange(wxCommandEvent& event)
     //genBTC Query Menu: @ created in menu.cpp - line 114
     UD_UpdateMenuItemLabel(ID_QueryClusters, L"Show File's &Clusters", "");
     UD_UpdateMenuItemLabel(ID_QueryFreeGaps, L"Show Free Region &Gaps", "");    //genBTC Query Menu
-    UD_UpdateMenuItemLabel(ID_QueryOperation2, L"ID_QueryOperation2", "");
+    UD_UpdateMenuItemLabel(ID_QueryOperation2, L"---ID_QueryOperation2---", "");  //experimental
     UD_UpdateMenuItemLabel(ID_QueryOperation3, L"Stopgap: enumerate_gaps", "");    
     UD_UpdateMenuItemLabel(ID_QueryOperation4, L"Stopgap: count_gaps", "");
 
